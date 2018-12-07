@@ -1,0 +1,2372 @@
+
+
+---
+title: "Spring Chinook"
+author: "Paul Chittaro"
+date: "February 13, 2017; R studio Version 0.99.903"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# TO DO: 
+# 1. 
+```
+
+# Introduction.
+
+```{r setup, include=FALSE}
+# This code is not displayed in the html bc of this line of above code 'include=FALSE'.
+# Set directory of where the processed data file will be saved.
+knitr::opts_chunk$set(echo = TRUE)
+getwd() #This code returns the current working directory being used by R.
+
+setwd("U://otolith project//merged water temp data") # This code sets the working directory to where the rawdata file is located.
+```
+getwd()
+# Import raw data file
+Import a .csv file that was produced from the mass spec. 
+```{r import, include=FALSE}
+rm(list = ls()) # remove all objects in workspace.
+
+#File name = master data sheet.csv
+master = read.csv (file= "U://otolith project//merged water temp data//v8master.csv")
+master2 = read.csv (file= "U://otolith project//merged water temp data//v6corrplot.csv")
+
+incwidth = read.csv (file= "U://otolith project//merged water temp data//juvenile measurements r formatv2.csv")#Importing from csv. Edit address for R to find file to import.
+fl2 = read.csv (file= "U://otolith project//merged water temp data//juvenile growth v4.csv")
+flv1 = read.csv (file= "U://otolith project//merged water temp data//juvenile FLv1.csv")
+dailyaverage = read.csv (file= "U://otolith project//merged water temp data//daily average.csv")
+doy121_260 = read.csv (file= "U://otolith project//merged water temp data//juvenile FLv3.csv")
+dim(master) #dimensions of the imported file (rows & columns, respectively)
+names(master) #this code displays the column names of 'master' dataframe.
+
+#write.csv(master, file="master with doy.csv", row.names = FALSE)# This file has 'doy' added.
+```
+
+# Plots of TL & FL vs otolith radius
+```{r plot TL and FL vs otolith radius, echo=FALSE}
+# Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+#File name = master data sheet V3.csv
+master = read.csv (file= "U://otolith project//merged water temp data//v4withalltemp.csv") #Importing from csv. Edit address for R to find file to import.
+master2 = read.csv (file= "U://otolith project//merged water temp data//v6corrplot.csv") 
+masterTL= master[complete.cases(master[, 12]),] #remove rows that have a TL of 'NA'.
+#masterTL = subset(master, master$TL !='NA') # Subsetting TL.
+summary(masterTL$TL)
+graphics.off()
+#Multi-plots: 2 figures arranged in 2 rows of 1 plot.
+pdf("Length vs otolith radius.pdf")# Save the figure to pdf.
+par(oma=c(0.5,0,0,0))#Set Outer Margin Area: bottom, left, top, & right.
+par(mar=c(4,4, 2, 1)) #set margins=bottom, left, top, & right.
+par(mfrow=c(2,1))
+
+tlotorad = lm(TL~otorad, data=masterTL) #least squares fit betw TL (y-axis) vs. otolith radius (x-axis).
+tlotorad$fitted.values
+stdnfit=tlotorad$fitted.values
+tlotorad
+summary(tlotorad)
+attributes(tlotorad)
+tlotorad$coefficients["otorad"] #slope of tlotorad
+slope.tlotorad = coef(summary(tlotorad))["otorad","Estimate"] #slope saved as 'slope.tlotorad'.
+intercept.tlotorad = coef(summary(tlotorad))["(Intercept)", "Estimate"] #intercept saved as 'intercept.tlotorad'.
+slope.tlotorad
+intercept.tlotorad
+
+plot(TL~otorad, xlim = c(0, 1000), ylim=c(0, 140), ylab="Total length (mm)",xlab="Otolith radius (microns)", las=1, data=masterTL) #Plot of TL vs otolith radius.
+lines(masterTL$otorad, stdnfit, col="red" ) #Uses fitted values to make line on plot.
+text(750, 45, paste("R^2 = 0.751")) #  Adding the R2 to the plot.
+text(750, 30, paste("Slope =", round(slope.tlotorad, 2))) # Adding the slope to the plot.
+text(750, 15, paste("Intercept =", round(intercept.tlotorad, 2))) #  Adding the intercept to the plot.
+
+masterFL= master[complete.cases(master[, 12]),] #remove rows that have a TL of 'NA'.
+#masterFL = subset(master, master$FL !='NA') # Subsetting FL.
+flotorad = lm(FL~otorad, data=masterFL) #least squares fit betw TL (y-axis) vs. otolith radius (x-axis).
+flotorad$fitted.values
+stdnfit=flotorad$fitted.values
+flotorad
+summary(flotorad)
+attributes(flotorad)
+flotorad$coefficients["otorad"] #slope of flotorad
+slope.flotorad = coef(summary(flotorad))["otorad","Estimate"] #slope saved as 'slope.flotorad'.
+intercept.flotorad = coef(summary(flotorad))["(Intercept)", "Estimate"] #intercept saved as 'intercept.flotorad'.
+slope.flotorad
+intercept.flotorad
+
+plot(FL~otorad, xlim = c(0, 1000), ylim=c(0, 140), ylab="Fork length (mm)",xlab="Otolith radius (microns)", las=1, data=masterFL) #Plot of TL vs otolith radius.
+lines(masterFL$otorad, stdnfit, col="red") #Uses fitted values to make line on plot.
+text(750, 45, paste("R^2 = 0.736")) #  Adding the R2 to the plot
+text(750, 30, paste("Slope =", round(slope.flotorad, 2))) # Adding the slope to the plot.
+text(750, 15, paste("Intercept =", round(intercept.flotorad, 2))) #  Adding the intercept to the plot.
+
+
+dev.off()
+graphics.off()
+
+```
+
+```{r Plot of TL vs FL}
+master = read.csv (file= "/Users/paul.chittaro/Desktop/Manuscripts/Salmon/Spring Chinook/Salmon River/Idaho Chinook/R/master with doy.csv") #Importing from csv. Edit address for R to find file to import.
+graphics.off()
+pdf("FL vs TL.pdf")# Save the figure to pdf.
+par(mar=c(4,4, 2, 1)) #set margins=bottom, left, top, & right.
+FLvTL = lm(FL~TL, data=master) #least squares fit betw TL (y-axis) vs. FL(x-axis).
+FLvTL$fitted.values
+stdnfit=FLvTL$fitted.values
+FLvTL
+summary(FLvTL)
+attributes(FLvTL)
+FLvTL$coefficients["FL"] #slope of FLvTL
+slope.FLvTL = coef(summary(FLvTL))["TL","Estimate"] #slope saved as 'slope.FLvTL'.
+intercept.FLvTL = coef(summary(FLvTL))["(Intercept)", "Estimate"] #intercept saved as 'intercept.FLvTL'.
+slope.FLvTL
+intercept.FLvTL
+plot(TL~FL, ylab="Total length (mm)",xlab="Fork length (mm)", las=1, data=master) #Plot of TL vs otolith radius.
+text(100, 60, paste("R^2 = 0.99")) #  Adding the R2 to the plot.
+text(100, 50, paste("Slope =", round(slope.FLvTL, 2))) # Adding the slope to the plot.
+text(100, 40, paste("Intercept =", round(intercept.FLvTL, 2))) #  Adding the intercept to the plot.
+
+dev.off()
+graphics.off()
+
+```
+
+
+# Day of year
+```{r Convert date to day of year, include= FALSE}
+#names(master)
+#master$date = as.Date(paste( master$year, master$month , master$day , sep = "." )  , format = "%Y.%m.%d" ) #1st make a new column that has year/month/day.s
+#names(master)
+#master = master[, c(1:5, 22, 6:21)] #This moves date (was column 22) to be after the 5th column, followed by the rest of the columns.
+#names(master)
+#master$doy = strftime(master$date, format = "%j") #converts date to day of year (doy).
+#names(master)
+#master = master[, c(1:6, 23, 7:22)] #This moves doy (was column 23) to be after the 6th column, followed by the rest of the columns.
+#names(master)
+
+```
+
+
+```{r Plots}
+master = read.csv (file= "/Users/paul.chittaro/Desktop/Manuscripts/Salmon/Spring Chinook/Salmon River/Idaho Chinook/R/master with doy.csv") #Importing from csv. Edit address for R to find file to import.
+
+
+plot(TL~doy, data=master) #slight pos relationship.
+plot(wht~doy, data=master)
+plot(otorad~doy, data = master)
+plot(hess.den.sep~doy, data = master)
+plot(hess.den.jul~doy, data = master)
+plot(shann.sep~doy, data = master)
+plot(shann.jul~doy, data = master)
+plot(drift.den.sep~doy, data = master)
+plot(drift.den.jul~doy, data = master)
+
+pdf("drift den jul vs day of year.pdf")
+plot(drift.den.jul~doy, data = master) 
+dev.off()
+graphics.off()
+
+plot(otorad~hess.den.sep, data = master) #slight pos.
+plot(otorad~hess.den.jul, data = master) #slight pos.
+plot(otorad~shann.sep, data = master) #slight neg.
+plot(otorad~shann.jul, data = master)
+plot(otorad~drift.den.sep, data = master)
+plot(otorad~drift.den.jul, data = master) #outliers.
+
+plot(FL~hess.den.sep, data = master) #slight pos.
+plot(FL~hess.den.jul, data = master)
+plot(FL~shann.sep, data = master) #slight neg.
+plot(FL~shann.jul, data = master)
+plot(FL~drift.den.sep, data = master)
+plot(FL~drift.den.jul, data = master) 
+
+plot(hess.den.sep~doy, data = master) 
+plot(hess.den.jul~doy, data = master)
+plot(shann.sep~doy, data = master) 
+plot(shann.jul~doy, data = master)
+plot(drift.den.sep~doy, data = master)
+plot(drift.den.jul~doy, data = master)
+
+plot(hess.den.sep~year, data = master) 
+plot(hess.den.jul~year, data = master)
+plot(shann.sep~year, data = master) 
+plot(shann.jul~year, data = master)
+plot(drift.den.sep~year, data = master)
+plot(drift.den.jul~year, data = master)
+
+plot(FL~oni, data = master) 
+plot(FL~pre.oni, data = master)
+plot(otorad~oni, data = master) 
+plot(otorad~pre.oni, data = master)
+```
+
+
+
+# Estimating growth from otolith increment data using Zabels quadratic eq with biological intercept
+Using Image Pro PlusÂ© (version 7, Mediacybernetics) we measured distance from otolith core to edge (i.e., otolith radius at time of capture, Oc) and to as many increments as possible. This resulted in a dataframe whereby each fish had 2 columns: 1) a column of otolith radii and 2) a column of increment widths. We will calculate a 3rd column of fork length at a time prior to capture. Specifically, for each otolith radius (Oa) we will estimate fork length (FLa) using the quadratic equation with biological intercept reported in Zabel et al. (2010) (see #2590 Table 3):
+
+        FLa = ((0.096*(Oa-Ointercept))+(0.000053*((Oa-Ointercept)*(Oa-Ointercept)))) + FLintercept
+        FLa = ((0.096 * (Oa - 95.8)) + (0.000053 * ((Oa - 95.8) * (Oa - 95.8)))) + 21.6
+
+Where mean fish length at hatching (FLintercept) was 21.6mm for spring/summer Chinook and mean otolith radius intercept (Ointercept) at hatching was 95.8 microns for spring/summer Chinook. To constrain the models to pass through these intercepts, we first subtracted the intercept from each individualâ€™s fork length and otolith radius. NOTE: in order to convert the estimate back to FL we need to add FL intercept: Zabel told me this.
+
+Using this column of estimated fork lengths we then will calculate average daily growth rate (mm/day) for an individualsâ€™ last 7, 14, 21, and 28 days of life (a),
+                      Average daily growth=(FLc-FLa)/a
+7 to 28days of growth was a reasonable amount of time to estimate growth while in rearing habitats. 
+
+```{r import increment data, include=FALSE}
+#In this section I import 2 dataframes ('master with doy_v3.csv' and '2003.csv'). I need to use both of these dataframes to estimate FL at each daily increment using otolith radius. I'll need FL at capture from the master dataframe, and I'll need the max otolith radius in the otorad column of dataframe oto2003, as well as otolith radius at some early point. I estimate FL for every day we have otolith radius data, but I only calculate growth for periods of time;  I estimate growth for the last 7, 14, 21, 28, 50, 75, 100, and 125 days prior to capture. These estimates of growth are then appended to the 'master' dataframe.
+library(lattice)
+
+rm(list = ls()) # remove all objects in workspace.
+year=2016
+master = read.csv (file= "/Users/paul.chittaro/Desktop/Manuscripts/Salmon/Spring Chinook/Salmon River/Idaho Chinook/R/master with doy_v3.csv") #Importing from csv. Edit address for R to find file to import.
+master=subset(master, master$pm !='PM') #I excluded precocious males from the 'master' file b/c some fish ids are dublicated between the precocious males and the non-precocious males.
+oto2016 = read.csv (file= "/Users/paul.chittaro/Desktop/Manuscripts/Salmon/Spring Chinook/Salmon River/Idaho Chinook/R/2016.csv") #Importing from csv. Edit address for R to find file to import.
+list=master[master$year == (paste(2016)), c("id")] # Create an object called list that only has fish ids from 'master' dataframe for a particular year. Some ids are removed bc their increment widths were not found.  
+list
+list=as.character(list) #converts list to a character.
+list
+id=0 #Sets id to 0.
+########
+#id = "BVA.2016.7.C1" #manual entry of fish id.
+########
+
+pdf(paste(year, "_otolith plots.pdf", sep="")) #
+
+for (i in list) {
+  tryCatch({  # This code starts the 'tryCatch' function. The purpose of which was to, IF there was an error output within any part of the loop, THEN it would print the fish id associated with the error AND skip to the next iteration in the loop. Errors likely happen bc the otolith radii and increment measurements are not found.
+  id = paste(i)# i-th element of list is made into i-th id.
+  Ointercept = 95.8
+  FLintercept = 21.6
+  idotorad = paste(id, "otorad", sep = "_") #concatenates "id"_otorad.
+  otocapt = max(oto2016[, idotorad], na.rm = TRUE) #determines max "id"_otorad (ignoring the NAs). This value is pasted into the master file.
+  # if error then skip to next iteration.
+  idincrwidth = paste(id, "incrwidth", sep = "_") #concatenates "id"_incrwidth.
+  
+  par(oma = c(1, 1, 0, 0))
+  par(mar = c(4, 5, 3, 2)) #set margins=bottom, left, top, & right.
+  par(mfrow = c(2, 1))
+  
+  plot(oto2016[, idincrwidth] ~ oto2016$doy,
+  main = id,
+  ylim = c(0, 10),
+  xlim = c(50, 300),
+  ylab = "Otolith increment\nwidths (micron)",
+  xlab = "Day of year",
+  type = "o",
+  col = "red") #inspect plot for 'outliers'.
+  abline(h = 8, col = "Black") #adds a horizontal line to help identify outliers.
+  abline(h = 6, col = "Grey") #adds a horizontal line to help identify outliers.
+  
+  a = master[(master$id == id), ] #Which row in the master dataframe is the "id"" located.
+  FLcapt = a$FL #Finds the FL at capture for this "id".
+  
+  idFL = paste(id, "FL", sep = "_") #concatenates "id"_incrwidth.
+  
+  oto2016[, idFL] = ((0.096 * (oto2016[, idotorad] - Ointercept)) + 
+                       (0.000053 * (((oto2016[, idotorad]) - Ointercept)^2))) + FLintercept  #Uses Zabel's quadratic equation with biological intercept to calculate FL at each otolith radius. Thus, we calculate daily FL, but we don't use daily values in statistical analyses,instead we average across several days.
+
+  plot(
+  oto2016[, idFL] ~ oto2016$doy,
+  ylim = c(0, 100),
+  xlim = c(50, 300),
+  ylab = "Daily estimates\nof fork length (mm)",
+  xlab = "Day of year",
+  type = "o",
+  col = "red"
+  ) #inspect plot for 'outliers'.
+  
+  FLcapt = max(oto2016[, idFL], na.rm = TRUE)
+  maxrow <- which(oto2016[, idFL] == FLcapt)
+  gr7d = ((oto2016[maxrow, idFL]) - (oto2016[maxrow - 7, idFL])) / 7 #calculates average growth over a period of days.
+  gr14d = ((oto2016[maxrow, idFL]) - (oto2016[maxrow - 14, idFL])) / 14 #calculates average growth over a period of days.
+  gr21d = ((oto2016[maxrow, idFL]) - (oto2016[maxrow - 21, idFL])) / 21 #calculates average growth over a period of days.
+  gr28d = ((oto2016[maxrow, idFL]) - (oto2016[maxrow - 28, idFL])) / 28 #calculates average growth over a period of days.
+  gr50d = ((oto2016[maxrow, idFL]) - (oto2016[maxrow - 50, idFL])) / 50 #calculates average growth over a period of days.
+  gr75d = ((oto2016[maxrow, idFL]) - (oto2016[maxrow - 75, idFL])) / 75 #calculates average growth over a period of days.
+  gr100d = ((oto2016[maxrow, idFL]) - (oto2016[maxrow - 100, idFL])) / 100 #calculates average growth over a period of days.
+  gr125d = ((oto2016[maxrow, idFL]) - (oto2016[maxrow - 125, idFL])) / 125 #calculates average growth over a period of days.
+  
+  a$gr7d = gr7d #this pastes the value into the appropriate cell of dataframe 'a'.
+  a$gr14d = gr14d #this pastes the value into the appropriate cell of dataframe 'a'.
+  a$gr21d = gr21d #this pastes the value into the appropriate cell of dataframe 'a'.
+  a$gr28d = gr28d #this pastes the value into the appropriate cell of dataframe 'a'.
+  a$gr50d = gr50d #this pastes the value into the appropriate cell of dataframe 'a'.
+  a$gr75d = gr75d #this pastes the value into the appropriate cell of dataframe 'a'.
+  a$gr100d = gr100d #this pastes the value into the appropriate cell of dataframe 'a'.
+  a$gr125d = gr125d #this pastes the value into the appropriate cell of dataframe 'a'.
+  a$otocapt = otocapt #this pastes the value into the appropriate cell of dataframe 'a'.
+  a
+  
+  row = row.names(master[(master$id == id), ]) #Which row in the master dataframe is the 'id' located.
+  row
+  master[row, ] = a #This code pastes dataframe into specific rows of the 'master' dataframe.
+  
+  write.csv(master, file = "master with doy_v3.csv", row.names = FALSE) #export data into a new csv file, repeat above.
+  write.csv(oto2016, file = "2016_v2.csv", row.names = FALSE) #export data into a new csv file, repeat above.
+
+  }, error=function(e){cat(id, "ERROR :",conditionMessage(e), "\n")}) # This code completes the 'tryCatch' function. The purpose of which was to, IF there was an error output within any part of the loop, THEN it would print the fish id associated with the error AND skip to the next iteration in the loop. Errors likely happen bc the otolith radii and increment measurements are not found.  
+} #Repeat loop until all id's from the year are used.
+
+dev.off() # Make sure to run this last dev.off() code to finalize the plot.pdf.
+
+#plot(oto2003$BVA.2003.9.C1_FL ~ oto2003$BVA.2003.9.C1_otorad, xlim = c(0,700), ylim = c(-10, 80))
+
+# DATA QUALITY FOR 2003.
+# 'Too-high' increment widths (likely missing increments):
+# LGB.2003.8.C2 - dont worry about.
+# LGB.2003.8.C8 - dont worry about.
+# LGB.2003.9.2C4 - dont worry about.
+# 
+# DATA QUALITY FOR 2004.
+# 'Too-high' increment widths (likely missing increments):
+# ELK.2004.7.AchC4 - dont worry about it.
+# LBG.2004.7.C5 - dont worry about it.
+# LBG.2004.9.CH1 - dont worry about it.
+# LBG.2004.9.CH3 - dont worry about it.
+# SFS.2004.9.C6 - dont use bc I coulnd't confirm oto increments.
+# VAL.2004.8.C2 - dont use bc I coulnd't confirm oto increments.
+# VAL.2004.8.C3 - dont use bc I coulnd't confirm oto increments.
+# VAL.2004.8.C4 - dont use bc I coulnd't confirm oto increments.
+# VAL.2004.8.C5 - dont use bc I coulnd't confirm oto increments.
+# VAL.2004.8.C8- dont use bc I coulnd't confirm oto increments.
+
+# DATA QUALITY FOR 2005.
+# ALL OTOLITHS LOOK GOOD.
+
+# DATA QUALITY FOR 2006.
+# ALL OTOLITHS LOOK GOOD.  
+
+# DATA QUALITY FOR 2007.
+# ALL OTOLITHS LOOK GOOD.  
+
+# DATA QUALITY FOR 2008.
+# ALL OTOLITHS LOOK GOOD. 
+
+# DATA QUALITY FOR 2009.   
+# ALL OTOLITHS LOOK GOOD. 
+
+# DATA QUALITY FOR 2010.   
+# ALL OTOLITHS LOOK GOOD. 
+ 
+# DATA QUALITY FOR 2011.   
+# ALL OTOLITHS LOOK GOOD. 
+# MISSING ONE OTO INCREMENT DATA: ELK.2011.7.C9
+
+# DATA QUALITY FOR 2012.   
+# ALL OTOLITHS LOOK GOOD. 
+
+# DATA QUALITY FOR 2013.   
+# ALL OTOLITHS LOOK GOOD.  
+
+# DATA QUALITY FOR 2014.   
+# ALL OTOLITHS LOOK GOOD. 
+
+# DATA QUALITY FOR 2015.   
+# ALL OTOLITHS LOOK GOOD. 
+
+# DATA QUALITY FOR 2016.   
+# ALL OTOLITHS LOOK GOOD.  
+```
+
+
+
+
+# DON'T USE: Estimating growth from otolith increment data using Fraser-Lee
+Using Image Pro PlusÂ© (version 7, Mediacybernetics) we measured distance from otolith core to edge (i.e., otolith radius at time of capture, Oc) and to as many increments as possible. This resulted in a dataframe whereby each fish had 2 columns: 1) a column of otolith radii and 2) a column of increment widths. We will calculate a 3rd column of fork length at a time prior to capture. Specifically, for each otolith radius (Oa) we will estimate fork length (La) using the Fraser-Lee equation:
+                          La= d + ((Lc-d/Oc)Oa)
+where d is the intercept (8.817517mm) of the regression between fork length and otolith radius (R2 = 0.74, n = 991) and where Lc represents fork length (mm) at capture and Oc is otolith radius at capture. 
+Using this column of estimated fork lengths we then will calculate average daily growth rate (mm/day) for an individualsâ€™ last 7, 14, 21, and 28 days of life (a),
+                      Average daily growth=(Lc-La)/a
+7 to 28days of growth was a reasonable amount of time to estimate growth while in rearing habitats. 
+
+```{r import increment data, include=FALSE}
+#In this section I import 2 dataframes ('master with doy.csv' and '2003.csv'). I need to use both of these dataframes to estimate FL at each daily increment using otolith radius. I use fraser-lee equation to estimate fork length at some early point in life (i.e., otolith radius). I'll need FL at capture from the master dataframe, and I'll need the max otolith radius in the otorad column of dataframe oto2003, as well as otolith radius at some early point. I estimate FL for every day we have otolith radius data, but I only calculate growth for periods of time;  I estimate growth for the last 7, 14, 21, 28, 50, 75, 100, and 125 days prior to capture. These estimates of growth are then appended to the 'master' dataframe.
+library(lattice)
+
+rm(list = ls()) # remove all objects in workspace.
+year=2016
+master = read.csv (file= "/Users/paul.chittaro/Desktop/Manuscripts/Salmon/Spring Chinook/Salmon River/Idaho Chinook/R/master with doy_v2.csv") #Importing from csv. Edit address for R to find file to import.
+master=subset(master, master$pm !='PM') #I excluded precocious males from the 'master' file b/c some fish ids are dublicated between the precocious males and the non-precocious males.
+oto2016 = read.csv (file= "/Users/paul.chittaro/Desktop/Manuscripts/Salmon/Spring Chinook/Salmon River/Idaho Chinook/R/2016.csv") #Importing from csv. Edit address for R to find file to import.
+list=master[master$year == (paste(2016)), c("id")] # Create an object called list that only has fish ids from 'master' dataframe for a particular year. Some ids are removed bc their increment widths were not found.  
+list
+list=as.character(list) #converts list to a character.
+list
+id=0 #Sets id to 0.
+########
+#id = "BVA.2016.7.C1" #manual entry of fish id.
+########
+
+pdf(paste(year, "_otolith plots.pdf", sep="")) #
+
+for (i in list) {
+  tryCatch({  # This code starts the 'tryCatch' function. The purpose of which was to, IF there was an error output within any part of the loop, THEN it would print the fish id associated with the error AND skip to the next iteration in the loop. Errors likely happen bc the otolith radii and increment measurements are not found.
+  id = paste(i)# i-th element of list is made into i-th id.
+  intercept = 8.817517
+  idotorad = paste(id, "otorad", sep = "_") #concatenates "id"_otorad.
+  otocapt = max(oto2016[, idotorad], na.rm = TRUE) #determines max "id"_otorad (ignoring the NAs). This value is used in Fraser-Lee equation.
+  # if error then skip to next iteration.
+  idincrwidth = paste(id, "incrwidth", sep = "_") #concatenates "id"_incrwidth.
+  
+  par(oma = c(1, 1, 0, 0))
+  par(mar = c(4, 5, 3, 2)) #set margins=bottom, left, top, & right.
+  par(mfrow = c(2, 1))
+  
+  plot(oto2016[, idincrwidth] ~ oto2016$doy,
+  main = id,
+  ylim = c(0, 10),
+  xlim = c(50, 300),
+  ylab = "Otolith increment\nwidths (micron)",
+  xlab = "Day of year",
+  type = "o",
+  col = "red") #inspect plot for 'outliers'.
+  abline(h = 8, col = "Black") #adds a horizontal line to help identify outliers.
+  abline(h = 6, col = "Grey") #adds a horizontal line to help identify outliers.
+  
+  a = master[(master$id == id), ] #Which row in the master dataframe is the "id"" located.
+  FLcapt = a$FL #Finds the FL at capture for this "id".
+  
+  idFL = paste(id, "FL", sep = "_") #concatenates "id"_incrwidth.
+  oto2016[, idFL] = intercept + (((FLcapt - intercept) / (otocapt)) * oto2016[, idotorad]) #Uses the fraser-Lee equation to calculate FL at each otolith radius. Thus, we calculate daily FL, but we don't use daily values in statistical analyses,instead we average across several days.
+  
+  plot(
+  oto2016[, idFL] ~ oto2016$doy,
+  ylim = c(0, 100),
+  xlim = c(50, 300),
+  ylab = "Daily estimates\nof fork length (mm)",
+  xlab = "Day of year",
+  type = "o",
+  col = "red"
+  ) #inspect plot for 'outliers'.
+  
+  FLcapt = max(oto2016[, idFL], na.rm = TRUE)
+  maxrow <- which(oto2016[, idFL] == FLcapt)
+  gr7d = ((oto2016[maxrow, idFL]) - (oto2016[maxrow - 7, idFL])) / 7 #calculates average growth over a period of days.
+  gr14d = ((oto2016[maxrow, idFL]) - (oto2016[maxrow - 14, idFL])) / 14 #calculates average growth over a period of days.
+  gr21d = ((oto2016[maxrow, idFL]) - (oto2016[maxrow - 21, idFL])) / 21 #calculates average growth over a period of days.
+  gr28d = ((oto2016[maxrow, idFL]) - (oto2016[maxrow - 28, idFL])) / 28 #calculates average growth over a period of days.
+  gr50d = ((oto2016[maxrow, idFL]) - (oto2016[maxrow - 50, idFL])) / 50 #calculates average growth over a period of days.
+  gr75d = ((oto2016[maxrow, idFL]) - (oto2016[maxrow - 75, idFL])) / 75 #calculates average growth over a period of days.
+  gr100d = ((oto2016[maxrow, idFL]) - (oto2016[maxrow - 100, idFL])) / 100 #calculates average growth over a period of days.
+  gr125d = ((oto2016[maxrow, idFL]) - (oto2016[maxrow - 125, idFL])) / 125 #calculates average growth over a period of days.
+  
+  a$gr7d = gr7d #this pastes the value into the appropriate cell of dataframe 'a'.
+  a$gr14d = gr14d #this pastes the value into the appropriate cell of dataframe 'a'.
+  a$gr21d = gr21d #this pastes the value into the appropriate cell of dataframe 'a'.
+  a$gr28d = gr28d #this pastes the value into the appropriate cell of dataframe 'a'.
+  a$gr50d = gr50d #this pastes the value into the appropriate cell of dataframe 'a'.
+  a$gr75d = gr75d #this pastes the value into the appropriate cell of dataframe 'a'.
+  a$gr100d = gr100d #this pastes the value into the appropriate cell of dataframe 'a'.
+  a$gr125d = gr125d #this pastes the value into the appropriate cell of dataframe 'a'.
+  a$otocapt = otocapt #this pastes the value into the appropriate cell of dataframe 'a'.
+  a
+  
+  row = row.names(master[(master$id == id), ]) #Which row in the master dataframe is the 'id' located.
+  row
+  master[row, ] = a #This code pastes dataframe into specific rows of the 'master' dataframe.
+  
+  write.csv(master, file = "master with doy_v2.csv", row.names = FALSE) #export data into a new csv file, repeat above.
+  write.csv(oto2016, file = "2016_v2.csv", row.names = FALSE) #export data into a new csv file, repeat above.
+
+  }, error=function(e){cat(id, "ERROR :",conditionMessage(e), "\n")}) # This code completes the 'tryCatch' function. The purpose of which was to, IF there was an error output within any part of the loop, THEN it would print the fish id associated with the error AND skip to the next iteration in the loop. Errors likely happen bc the otolith radii and increment measurements are not found.  
+} #Repeat loop until all id's from the year are used.
+
+dev.off() # Make sure to run this last dev.off() code to finalize the plot.pdf.
+
+# DATA QUALITY FOR 2003.
+# 'Too-high' increment widths (likely missing increments):
+# LGB.2003.8.C2 - dont worry about.
+# LGB.2003.8.C8 - dont worry about.
+# LGB.2003.9.2C4 - dont worry about.
+# 
+# DATA QUALITY FOR 2004.
+# 'Too-high' increment widths (likely missing increments):
+# ELK.2004.7.AchC4 - dont worry about it.
+# LBG.2004.7.C5 - dont worry about it.
+# LBG.2004.9.CH1 - dont worry about it.
+# LBG.2004.9.CH3 - dont worry about it.
+# SFS.2004.9.C6 - dont use bc I coulnd't confirm oto increments.
+# VAL.2004.8.C2 - dont use bc I coulnd't confirm oto increments.
+# VAL.2004.8.C3 - dont use bc I coulnd't confirm oto increments.
+# VAL.2004.8.C4 - dont use bc I coulnd't confirm oto increments.
+# VAL.2004.8.C5 - dont use bc I coulnd't confirm oto increments.
+# VAL.2004.8.C8- dont use bc I coulnd't confirm oto increments.
+
+# DATA QUALITY FOR 2005.
+# ALL OTOLITHS LOOK GOOD.
+
+# DATA QUALITY FOR 2006.
+# ALL OTOLITHS LOOK GOOD.  
+
+# DATA QUALITY FOR 2007.
+# ALL OTOLITHS LOOK GOOD.  
+
+# DATA QUALITY FOR 2008.
+# ALL OTOLITHS LOOK GOOD. 
+
+# DATA QUALITY FOR 2009.   
+# ALL OTOLITHS LOOK GOOD. 
+
+# DATA QUALITY FOR 2010.   
+# ALL OTOLITHS LOOK GOOD. 
+ 
+# DATA QUALITY FOR 2011.   
+# ALL OTOLITHS LOOK GOOD. 
+# MISSING ONE OTO INCREMENT DATA: ELK.2011.7.C9
+
+# DATA QUALITY FOR 2012.   
+# ALL OTOLITHS LOOK GOOD. 
+
+# DATA QUALITY FOR 2013.   
+# ALL OTOLITHS LOOK GOOD.  
+
+# DATA QUALITY FOR 2014.   
+# ALL OTOLITHS LOOK GOOD. 
+
+# DATA QUALITY FOR 2015.   
+# ALL OTOLITHS LOOK GOOD. 
+
+# DATA QUALITY FOR 2016.   
+# ALL OTOLITHS LOOK GOOD.  
+```
+
+# Plot otorad vs otocapt 
+Otorad is the otolith radius at capture that was copied from a bunch of excel files. The problem is that some of them aren't the same as the otolith radius taken from increment analysis. So I wanted to plot these two measurements of otolith radius. I'm more confident in otocapt.
+
+```{r, }
+rm(list = ls()) # remove all objects in workspace.
+master = read.csv (file= "/Users/paul.chittaro/Desktop/Manuscripts/Salmon/Spring Chinook/Salmon River/Idaho Chinook/R/master with doy_v2.csv") #Importing from csv. Edit address for R to find file to import.
+
+pdf("otocapt~otorad.pdf")# Save the figure to pdf.
+
+plot(otocapt~otorad, data=master, xlim=c(100,900), ylim=c(100,900))
+#text(master$otorad, master$otocapt, paste(round(master$otorad, 1), round(master$otocapt, 1), sep=", "), cex=0.5) # for (x, y), but this gets cluttered
+dev.off()
+graphics.off()
+```
+
+#GLM analysis to examine variability in somatic growth.
+
+```{r GLM of gr7d vs. 8 variables}
+rm(list = ls()) # remove all objects in workspace.
+master = read.csv (file= "/Users/paul.chittaro/Desktop/Manuscripts/Salmon/Spring Chinook/Salmon River/Idaho Chinook/R/master with doy_v3.csv") #Importing from csv. Edit address for R to find file to import.
+
+#Dep variable: gr7d.
+#Indep variable: year, stream, totP, totN, doy, afdm, chloro,  oni. (pre.oni was excluded bc it is highly correlated with oni).
+names(master)
+master = subset(master, master$totP !='NA' & master$totN !='NA' & master$doy !='NA') # Subsetting.
+summary(master$stream)
+master$stream=factor(master$stream)# this removes unused levels.
+summary(master$stream)
+#master=master[with(master, order(doy)), ] #this sorts by day of year.
+#master$doy=as.numeric(master$doy)
+# install if necessary
+# install.packages('gtools')
+#load library
+library(gtools)
+
+
+# Using my variable names
+COMBO <- c("year", "stream", "totP", "totN", "doy", "oni", "daily_mean_7day", "CPUE", "drift.biomass","FL", "depth_7day_average")
+
+options(max.print=3000000) # max.print ensures that all rows are displayed. Max.print is put before the function.
+# How many possible combinations?
+n = nrow(combinations(n=11,r=1,v=COMBO)) + 
+  nrow(combinations(n=11,r=2,v=COMBO)) + 
+  nrow(combinations(n=11,r=3,v=COMBO)) +
+  nrow(combinations(n=11,r=4,v=COMBO)) +
+  nrow(combinations(n=11,r=5,v=COMBO)) +
+  nrow(combinations(n=11,r=6,v=COMBO)) +
+  nrow(combinations(n=11,r=7,v=COMBO)) +
+  nrow(combinations(n=11,r=8,v=COMBO)) +
+  nrow(combinations(n=11,r=9,v=COMBO)) +
+  nrow(combinations(n=11,r=10,v=COMBO)) +
+  nrow(combinations(n=11,r=11,v=COMBO)) #+
+  #nrow(combinations(n=16,r=12,v=COMBO)) +
+  #nrow(combinations(n=16,r=13,v=COMBO)) +
+  #nrow(combinations(n=16,r=14,v=COMBO)) +
+  #nrow(combinations(n=16,r=15,v=COMBO)) +
+  #nrow(combinations(n=16,r=16,v=COMBO))
+n=as.numeric(n)
+
+# Intercept only model (No fixed effects)
+InterceptModel = glm (gr7d ~ 1, data = master) # add family = Gamma(link="log") to each GLM bc growth/size data is never negative. Nick said it is more appropriate than the default family.
+AIC(InterceptModel) #AIC=-1255.226
+
+FullModel = glm (gr7d ~ year + stream + totP + totN + doy + oni + daily_mean_7day + CPUE + drift.biomass + FL + depth_7day_average, data = master)
+AIC(FullModel) #AIC=-1310.768
+
+options(max.print=3000000) # max.print ensures that all rows are displayed. Max.print is put before the function.
+# Create list of independent variables.
+ind_vars = c("year", "stream", "totP", "totN", "doy", "oni", "daily_mean_7day", "CPUE", "drift.biomass","FL", "depth_7day_average")
+ind_vars
+dep_vars = "gr7d"
+
+# Create all combinations of independant variables. All combinations are possible when 
+# considering 1-, 2-, 3-, 4-, 5-, 6-, 7-, 8-, 9-, 10-, 11-factor models.
+start <- proc.time() # Time process by 1st marking the start time (start).
+ind_vars_comb = unlist( sapply( seq_len(length(ind_vars)), 
+                                function(i) {
+                                  apply( combn(ind_vars,i), 2, function(x) paste(x, collapse = "+"))
+                                }))
+proc.time() - start #Subtrract the start time fro the current time.
+
+var_comb = expand.grid (dep_vars, ind_vars_comb) # pair independent variables with dependent variable.
+options(max.print=3000000) # max.print ensures that all rows are displayed. Max.print is put before the function.
+var_comb
+
+start <- proc.time() # Time process by 1st marking the start time (start).
+formula_vec = sprintf("%s ~ %s", var_comb$Var1, var_comb$Var2) #Create formulas for all combinations.
+# The "%s ~ %s" is replaced with "GR" ("var_comb$Var1") and all combinations of independent 
+# variables ("var_comb$Var2") from "ind_vars_comb", respectively.
+proc.time() - start #Subtrract the start time fro the current time.
+formula_vec
+
+#Create models.
+# Which should I use? 
+#na.action=na.fail: Stop if any missing values are encountered.
+#na.action=na.omit: Drop out any rows with missing values anywhere in them and forgets them forever.
+#na.action=na.exclude: Drop out rows with missing values, but keeps track of where they were (so 
+#that when you make predictions, for example, you end up with a vector whose length is that of the original response.)
+#na.action=na.pass: Take no action. 
+start <- proc.time() # Time process by 1st marking the start time (start).
+AllModels = lapply(formula_vec, function(f) { 
+  fit1 = glm(f, data = master, na.action = na.exclude)
+  fit1_AIC = AIC(fit1)
+  return(fit1_AIC)
+})
+proc.time() - start #Subtrract the start time fro the current time.
+
+# it took 4sec to complete all combinations.
+
+# Merge dataframes: AllModels_df & formula_vec, then sort by AIC. http://stackoverflow.com/questions/4225223/r-list-to-data-frame
+# 1st make AllModels & formula_vec into a dataframes AllModels_df & formula_vec_df, respectively.
+options(max.print=3000000) # max.print ensures that all rows are displayed. Max.print is put before the function.
+AllModels_df <- data.frame(matrix(unlist(AllModels), nrow=n, byrow=T)) #convert list to dataframe.
+formula_vec_df <- data.frame(matrix(unlist(formula_vec), nrow=n, byrow=T)) #convert list to dataframe.
+
+colnames(AllModels_df) <- c("AIC") # I renamed columns.
+colnames(formula_vec_df) <- c("Model") # I renamed columns.
+
+AllModels_df 
+formula_vec_df
+
+#Add an extra column to both AllModels_df & formula_vec_df dataframes.
+# This extra column should have row numbers. This way both dataframes will have matching columns,
+# so that we can use this common column to merge the 2 dataframes.
+AllModels_df$rowID = (1:nrow(AllModels_df)) #a new column ('rowID') was added to AllModels_df.
+
+#repeat for formula_vec_df
+formula_vec_df$rowID = (1:nrow(formula_vec_df)) #a new column ('rowID') was added to AllModels_df.
+
+library(plyr) #need plyr to use join. And join is used to merge 2 dataframes. 
+AIC_AllModels_df=join(AllModels_df, formula_vec_df, by = "rowID", type = "inner", match = "all")
+# I merged AllModels_df & formula_vec_df dataframes & I use 'rowId' to correctly merge dataframes.
+
+options(max.print=3000000) # max.print ensures that all rows are displayed. Max.print is put before the function.
+AIC_AllModels_df
+
+min(AIC_AllModels_df$AIC) # find the lowest AIC value.
+
+# I sorted AIC values, & made a new object.
+AIC2_AllModels_df = AIC_AllModels_df[with(AIC_AllModels_df, order(AIC)),] # For some reason sorting rows adds an column called
+# "row.names", but the dimensions are still 3 variables.
+dim(AIC2_AllModels_df)
+
+options(max.print=3000000) # max.print ensures that all rows are displayed. Max.print is put before the function.
+AIC2_AllModels_df
+
+sink("AIC2_AllModels_df_master.csv")
+AIC2_AllModels_df
+sink()
+
+#Thus the 10 rows at the top are the 10 lowest (i.e., best) AIC values.
+#
+cbind(AIC2_AllModels_df[1:10,]) # The lowest (i.e., best) 10 AIC values.
+#  AIC       rowID                                           Model
+175	-1932.581	175	gr7d ~ year+stream+totN+doy+oni
+221	-1930.968	221	gr7d ~ year+stream+totP+totN+doy+oni
+98	-1930.165	98	gr7d ~ year+stream+totN+doy
+163	-1928.585	163	gr7d ~ year+stream+totP+totN+doy
+140	-1928.202	140	gr7d ~ stream+totN+doy+oni
+200	-1926.551	200	gr7d ~ stream+totP+totN+doy+oni
+39	-1923.158	39	gr7d ~ year+stream+doy
+94	-1921.51	94	gr7d ~ year+stream+totP+doy
+104	-1921.315	104	gr7d ~ year+stream+doy+oni
+169	-1919.677	169	gr7d ~ year+stream+totP+doy+oni
+
+
+#Top models below.
+summary(glm(gr7d ~ year+stream+totN+doy+oni, data=master))
+
+dev.off()
+graphics.off()
+pdf("ModelFits.gr7d.pdf")
+par(mfrow = c(3,2), oma = c(0,1,2,0), mar = c(5,5.5,0,1)) # bottom, left, top, & right.
+
+# Plot for year
+fit = glm(gr7d ~ year + stream + totN + doy, data=master)
+year = seq(min(master$year), max(master$year), 1)
+L <- length(year)
+
+new.x <- data.frame(year = year, 
+                    stream = rep(("MAR"), L), 
+                    totN = rep(median(master$totN), L),
+                    doy = rep(median(master$doy), L))
+pred <- predict(fit, newdata=new.x, se.fit = TRUE)
+
+plot(1:L, pred$fit, pch=16,
+     xaxt="n",
+     xlab = "",
+     ylab = ("7day Growth rate (mm/day)"),
+     ylim = c(0.2,0.4),
+     cex.lab=1.2)
+mtext("Year", side = 1, line = 3, cex = 0.9)
+for (i in 1:L){
+  lines(c(i,i), c(pred$fit[i]+1.96*pred$se.fit[i], pred$fit[i]-1.96*pred$se.fit[i]))
+}
+axis(1, at=1:L, labels = year, las=3)
+
+# Plot of stream
+fit = glm(gr7d ~ year + stream + totN + doy, data=master)
+streamsite = unique(master$stream)
+L <- length(streamsite)
+summary(master$stream)
+
+new.x <- data.frame(year = rep((2015), L),  
+                    stream = streamsite, 
+                    totN = rep(median(master$totN), L),
+                    doy = rep(median(master$doy), L))
+pred <- predict(fit, newdata=new.x, se.fit = TRUE)
+
+plot(streamsite, pred$fit, type = "l",
+     xlab = "",
+     ylab = ("7day Growth rate (mm/day)"),
+     ylim = c(0.2,0.4),
+     cex.lab=1.2,
+     las=2)
+mtext("Stream", side = 1, line = 3, cex = 0.9)
+
+# add 95% CI.
+lines(streamsite, pred$fit+1.96*pred$se.fit, lty = 2)
+lines(streamsite, pred$fit-1.96*pred$se.fit, lty = 2)
+
+# Plot of totN
+fit = glm(gr7d ~ year + stream + totN + doy, data=master)
+totN <- seq(min(master$totN), max(master$totN), 10)
+L <- length(totN)
+new.x <- data.frame(year = rep((2015), L),  
+                    stream = rep(("MAR"), L),  
+                    totN = totN,
+                    doy = rep(median(master$doy), L))
+pred <- predict(fit, newdata=new.x, se.fit = TRUE)
+
+plot(totN, pred$fit, type = "l",
+     xlab = "",
+     ylab = ("7day Growth rate (mm/day)"),
+     ylim = c(0.2,0.4),
+     cex.lab=1.2)
+mtext("Total dissolved nitrogen", side = 1, line = 3, cex = 0.9)
+
+# add 95% CI.
+lines(totN, pred$fit+1.96*pred$se.fit, lty = 2)
+lines(totN, pred$fit-1.96*pred$se.fit, lty = 2)
+
+# Plot of doy
+fit = glm(gr7d ~ year + stream + totN + doy, data=master)
+doy <- seq(min(master$doy), max(master$doy), 1)
+L <- length(doy)
+new.x <- data.frame(year = rep((2015), L),  
+                    stream = rep(("MAR"), L),  
+                    totN = rep(median(master$totN), L),
+                    doy = doy)
+pred <- predict(fit, newdata=new.x, se.fit = TRUE)
+
+plot(doy, pred$fit, type = "l",
+     xlab = "",
+     ylab = ("7day Growth rate (mm/day)"),
+     ylim = c(0.2,0.4),
+     cex.lab=1.2)
+mtext("Day of year", side = 1, line = 3, cex = 0.9)
+
+# add 95% CI.
+lines(doy, pred$fit+1.96*pred$se.fit, lty = 2)
+lines(doy, pred$fit-1.96*pred$se.fit, lty = 2)
+
+dev.off()
+graphics.off()
+
+```
+
+# Historgram of hatch days by year
+```{r Histograms of hatch day by year}
+rm(list = ls()) # remove all objects in workspace.
+master = read.csv (file= "/Users/paul.chittaro/Desktop/Manuscripts/Salmon/Spring Chinook/Salmon River/Idaho Chinook/R/master with doy_v3.csv") #Importing from csv. Edit address for R to find file to import.
+
+hist(DFO$TLCAPT, xlim=c(0,700), breaks=35, main="", col=rgb(0.4,0.4,0.4,1), xlab="", ylab="", 
+     yaxt='n', xaxt='n', bg='white') # add a 
+# value to 'breaks' to divide the data into different groups. 'rgb' = red green blue, the 4th value is transparency.
+# rgb(1,0,0,1) is red with 0 transparency.
+
+#LEFT OFF HERE: BETH WROTE: "My first reaction is WHY is there a slow gradual decline in the 7 day growth rate from 2004 to 2016. Were only fish from September used?  Independent of that, how can we account for when the fish were caught (both year and within year).  "
+# add vertical lines to plot to designate June, July, August, Sept.
+dev.off()
+graphics.off()
+pdf("day of year by year.pdf")
+par(mfrow = c(7,2), oma = c(0,1,2,0), mar = c(3,2,1,1)) # bottom, left, top, & right.
+f2003 = subset(master, master$year %in% c("2003"))
+hist(f2003$doy, xlim=c(150,300), ylim = c(0,50), main="2003", xlab="", ylab="")
+
+f2004 = subset(master, master$year %in% c("2004"))
+hist(f2004$doy, xlim=c(150,300), ylim = c(0,50), main="2004", xlab="", ylab="")
+
+f2005 = subset(master, master$year %in% c("2005"))
+hist(f2005$doy, xlim=c(150,300), ylim = c(0,50), main="2005", xlab="", ylab="")
+
+f2006 = subset(master, master$year %in% c("2006"))
+hist(f2006$doy, xlim=c(150,300), ylim = c(0,50), main="2006", xlab="", ylab="")
+
+f2007 = subset(master, master$year %in% c("2007"))
+hist(f2007$doy, xlim=c(150,300),ylim = c(0,50), main="2007", xlab="", ylab="")
+
+f2008 = subset(master, master$year %in% c("2008"))
+hist(f2008$doy, xlim=c(150,300), ylim = c(0,50), main="2008", xlab="", ylab="")
+
+f2009 = subset(master, master$year %in% c("2009"))
+hist(f2009$doy, xlim=c(150,300), ylim = c(0,50), main="2009", xlab="", ylab="")
+
+f2010 = subset(master, master$year %in% c("2010"))
+hist(f2010$doy, xlim=c(150,300), ylim = c(0,50), main="2010", xlab="", ylab="")
+
+f2011 = subset(master, master$year %in% c("2011"))
+hist(f2011$doy, xlim=c(150,300), ylim = c(0,50),main="2011", xlab="", ylab="")
+
+f2012 = subset(master, master$year %in% c("2012"))
+hist(f2012$doy, xlim=c(150,300), ylim = c(0,50), main="2012", xlab="", ylab="")
+
+f2013 = subset(master, master$year %in% c("2013"))
+hist(f2013$doy, xlim=c(150,300), ylim = c(0,50),main="2013", xlab="", ylab="")
+
+f2014 = subset(master, master$year %in% c("2014"))
+hist(f2014$doy, xlim=c(150,300), ylim = c(0,50), main="2014", xlab="", ylab="")
+
+f2015 = subset(master, master$year %in% c("2015"))
+hist(f2015$doy, xlim=c(150,300), ylim = c(0,50), main="2015", xlab="", ylab="")
+
+f2016 = subset(master, master$year %in% c("2016"))
+hist(f2016$doy, xlim=c(150,300), ylim = c(0,50), main="2016", xlab="", ylab="")
+
+dev.off()
+graphics.off()
+
+```
+
+####spacial trends graphs-------------------------------------------------------------------
+ doy240_260<-master[master$doy >= 240 & master$doy <= 260,]
+
+p1<-ggplot(doy240_260, aes(x= stream, y= gr7d))+
+  geom_boxplot()+
+  theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(x= " ",y= "",title= "average daily growth rate (mm/day) across streams")
+p1
+year2003<-doy240_260[doy240_260$year=='2003',]
+p1<-ggplot(year2003, aes(x= stream, y= gr7d))+
+  geom_boxplot()+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(x= " ",y= "",title= "2003 streams")
+
+year2004<-doy240_260[doy240_260$year=='2004',]
+p2<-ggplot(year2004, aes(x= stream, y= gr7d))+
+  geom_boxplot()+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(x= " ",y= "",title= "2004 streams")
+  
+  year2005<-doy240_260[doy240_260$year=='2005',]
+p3<-ggplot(year2005, aes(x= stream, y= gr7d))+
+ geom_boxplot()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(x= " ",y= "",title= "2005 streams")
+  
+  year2006<-doy240_260[doy240_260$year=='2006',]
+p4<-ggplot(year2006, aes(x= stream, y= gr7d))+
+ geom_boxplot()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(x= " ",y= "",title= "2006 streams")
+  
+  year2007<-doy240_260[doy240_260$year=='2007',]
+p5<-ggplot(year2007, aes(x= stream, y= gr7d))+
+  geom_boxplot()+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(x= " ",y= "",title= "2007 streams")
+  
+  year2008<-doy240_260[doy240_260$year=='2008',]
+p6<-ggplot(year2008, aes(x= stream, y= gr7d))+
+ geom_boxplot()+
+   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(x= " ",y= "",title= "2008 streams")
+  
+  year2009<-master[master$year=='2009',]
+p7<-ggplot(year2009, aes(x= stream, y= gr7d))+
+  geom_boxplot()+
+   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(x= " ",y= "",title= "2009 streams")
+  #using the master data since all fish were from July, so can't subset and use Sept fish
+  
+  year2010<-doy240_260[doy240_260$year=='2010',]
+p8<-ggplot(year2010, aes(x= stream, y= gr7d))+
+  geom_boxplot()+
+   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(x= " ",y= "",title= "2010 streams")
+  
+  year2011<-master[master$year=='2011',]
+p9<-ggplot(year2011, aes(x= stream, y= gr7d))+
+  geom_boxplot()+
+   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(x= " ",y= "",title= "2011 streams")
+    #using the master data since all fish were from July, so can't subset and use Sept fish
+    
+  year2012<-doy240_260[doy240_260$year=='2012',]
+p10<-ggplot(doy240_260, aes(x= stream, y= gr7d))+
+  geom_boxplot()+
+   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(x= " ",y= "",title= "2012 streams")
+ p10 
+  year2013<-doy240_260[doy240_260$year=='2013',]
+p11<-ggplot(year2013, aes(x= stream, y= gr7d))+
+ geom_boxplot()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(x= " ",y= "",title= "2013 streams")
+  
+  year2014<-doy240_260[doy240_260$year=='2014',]
+p12<-ggplot(year2014, aes(x= stream, y= gr7d))+
+  geom_boxplot()+
+   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(x= " ",y= "",title= "2014 streams")
+  
+  year2015<-doy240_260[doy240_260$year=='2015',]
+p13<-ggplot(year2015, aes(x= stream, y= gr7d))+
+ geom_boxplot()+
+ theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(x= " ",y= "",title= "2015 streams")
+  
+  year2016<-doy240_260[doy240_260$year=='2016',]
+p14<-ggplot(year2016, aes(x= stream, y= gr7d))+
+  geom_boxplot()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(x= "",y= "",title= "2016 streams")
+
+  grid.arrange(arrangeGrob (p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14, ncol=4, nrow=4, top = textGrob("average daily growth rate (mm/day) over time", rot = 0, vjust = 0)))
+
+
+  grid.arrange(arrangeGrob (p1,p2, ncol=1, nrow=2, top = textGrob("", rot = 0, vjust = 0)))
+####temporal trends graphs--------------------------------------------------------------------
+
+
+p2<-ggplot(doy240_260, aes(x=year, y= gr7d))+
+  geom_boxplot(aes(group = cut_width(year, 0.25)))+
+  theme(panel.background = element_blank())+
+  theme_bw()+
+  labs(x= " ",y= "average daily growth rate(mm/day)",title= "average daily growth rate (mm/day) across years")
+
+SFS<-doy240_260[doy240_260$stream=='SFS',]
+ggplot(SFS, aes(x=year, y= gr7d))+
+  geom_boxplot(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "SFS")
+  
+LAK<-doy240_260[doy240_260$stream=='LAK',]
+ggplot(LAK, aes(x= year, y= gr7d))+
+  geom_boxplot(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "LAK")
+  
+  VAL<-doy240_260[doy240_260$stream=='VAL',]
+ggplot(VAL, aes(x= year, y= gr7d))+
+ geom_boxplot(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "VAL")
+  
+  CHO<-doy240_260[doy240_260$stream=='CHO',]
+ggplot(CHO, aes(x= year, y= gr7d))+
+  geom_boxplot(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "CHO")
+  
+  MAR<-doy240_260[doy240_260$stream=='MAR',]
+ggplot(MAR, aes(x= year, y= gr7d))+
+  geom_boxplot(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "MAR")
+  
+  ELK<-doy240_260[doy240_260$stream=='ELK',]
+ggplot(ELK, aes(x= year, y= gr7d))+
+  geom_boxplot(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "ELK")
+  
+BVA<-doy240_260[doy240_260$stream=='BVA',]
+ggplot(BVA, aes(x= year, y= gr7d))+
+  geom_boxplot(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "BVA")
+
+####growth versus temperature-------------------------------------------------------------------
+ggplot(master, aes(x = daily_max_7day, y = gr7d)) + geom_point()+
+geom_smooth(method = "gam", formula =y ~ s(x, k=6), size = 1)+
+theme(panel.background = element_blank())+
+labs(x= "",y= "",title= "")
+
+ELK<-master[master$stream=='ELK',]
+SFS<-master[master$stream=='SFS',]
+VAL<-master[master$stream=='VAL',]
+LAK<-master[master$stream=='LAK',]
+BVA<-master[master$stream=='BVA',]
+CHO<-master[master$stream=='CHO',]
+MAR<-master[master$stream=='MAR',]
+
+p1<- ggplot(ELK, aes(x = daily_mean_7day, y = gr7d)) + geom_point()+
+geom_smooth(method = "gam", formula =y ~ s(x, k=2), size = 1)+
+theme(panel.background = element_blank())+
+labs(x= "ELK",y= "",title= "")
+
+p2<- ggplot(SFS, aes(x = daily_mean_7day, y = gr7d)) + geom_point()+
+geom_smooth(method = "gam", formula =y ~ s(x, k=2), size = 1)+
+theme(panel.background = element_blank())+
+labs(x= "SFS",y= "",title= "")
+
+p3 <- ggplot(VAL, aes(x = daily_mean_7day, y = gr7d)) + geom_point()+
+geom_smooth(method = "gam", formula =y ~ s(x, k=2), size = 1)+
+theme(panel.background = element_blank())+
+labs(x= "VAL",y= "",title= "")
+
+p4<- ggplot(LAK, aes(x = daily_mean_7day, y = gr7d)) + geom_point()+
+geom_smooth(method = "gam", formula =y ~ s(x, k=2), size = 1)+
+theme(panel.background = element_blank())+
+labs(x= "LAK",y= "",title= "")
+
+p5 <- ggplot(BVA, aes(x = daily_mean_7day, y = gr7d)) + geom_point()+
+geom_smooth(method = "gam", formula =y ~ s(x, k=2), size = 1)+
+theme(panel.background = element_blank())+
+labs(x= "BVA",y= "",title= "")
+
+p6<- ggplot(CHO, aes(x = daily_mean_7day, y = gr7d)) + geom_point()+
+geom_smooth(method = "gam", formula =y ~ s(x, k=2), size = 1)+
+theme(panel.background = element_blank())+
+labs(x= "CHO",y= "",title= "")
+
+p7 <- ggplot(MAR, aes(x = daily_mean_7day, y = gr7d)) + geom_point()+
+geom_smooth(method = "gam", formula =y ~ s(x, k=2), size = 1)+
+theme(panel.background = element_blank())+
+labs(x= "MAR",y= "",title= "")
+
+    grid.arrange(arrangeGrob (p1,p2,p3,p4,p5,p6,p7, ncol=2, nrow=4, top = textGrob("average daily growth rate during last 7 days of life (mm/day) compared to average 7 day temp", rot = 0, vjust = 0)))
+
+
+   
+#### growth versus month, ex: Is July better than Sept?-------------------------------------------
+   
+            
+    r2<-lm(formula = doy ~ gr7d, data = master)
+summary(r2)
+ggplot(master, aes(x=doy, y=gr7d)) +
+  geom_point() +    
+  geom_smooth(method=lm, se=FALSE)+
+  theme(panel.background = element_blank())+
+  labs(x= "day of year",y= "agerage daily growth (mm/day) during last 7 days ",title= "")+
+  annotate("text", x=270, y=0.6, label = "p_value == 2.2e-16", parse=T)
+ 
+   
+     r2<-lm(formula = doy ~ gr7d, data = doy240_260)
+summary(r2)
+    ggplot(doy240_260, aes(x=doy, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  geom_smooth(method=lm, se=FALSE)+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "")+  
+   annotate("text", x=250, y=0.6, label = "p_value == 1.114e-13", parse=T)
+   
+   
+   ggplot(master, aes(x=doy, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "all streams growth versus doy caught")
+   
+   SFS<-master[master$stream=='SFS',]
+ggplot(SFS, aes(x=doy, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "SFS growth versus doy caught")
+  
+LAK<-master[master$stream=='LAK',]
+ggplot(LAK, aes(x= doy, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "LAK growth versus doy caught")
+  
+  VAL<-master[master$stream=='VAL',]
+ggplot(VAL, aes(x= doy, y= gr7d))+
+ geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "VAL growth versus doy caught")
+  
+  CHO<-master[master$stream=='CHO',]
+ggplot(CHO, aes(x= doy, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "CHO growth versus doy caught")
+  
+  MAR<-master[master$stream=='MAR',]
+ggplot(MAR, aes(x= doy, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "MAR growth versus doy caught")
+  
+  ELK<-master[master$stream=='ELK',]
+ggplot(ELK, aes(x= doy, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "ELK growth versus doy caught")
+  
+BVA<-master[master$stream=='BVA',]
+ggplot(BVA, aes(x= doy, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "BVA growth versus doy caught")
+   
+#### exploratory graphing of environmental variables versus gr7d---------------------------------  
+      
+  ggplot(master, aes(x=stream, y=depth_7day_average))+
+  geom_boxplot()+
+  labs(x= " ",y= "",title= "") 
+   
+    ggplot(master, aes(x=stream, y=daily_mean_7day))+
+  geom_boxplot()+
+  theme(panel.background = element_blank())+
+  labs(x= " ",y= "average daily water temperature (C)",title= "average water temperature across streams") 
+  
+   
+   
+    p1<-ggplot(master, aes(x=oni, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "",title= "all streams oni") 
+   
+   
+       p2<-ggplot(master, aes(x=pre.oni, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "",title= "all streams pre.oni") 
+ 
+  
+  
+          p3<-ggplot(master, aes(x=drift.biomass, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "",title= "all streams drift.biomass") 
+ 
+  
+           ggplot(master, aes(x=drift.den.jul, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "all streams drift.den.jul") 
+
+  
+           p4<-ggplot(master, aes(x=totN, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "",title= "all streams totN") 
+
+  
+  
+  
+  
+  
+  
+         p5<- ggplot(master, aes(x=totP, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "",title= "all streams totP") 
+   
+  
+         p6<-ggplot(master, aes(x=afdm, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "",title= "all streams afdm") 
+
+  
+        p7<- ggplot(master, aes(x=chloro, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "",title= "all streams chloro") 
+ 
+  
+         p8<-ggplot(master, aes(x=hess.biomass, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "",title= "all streams hess.biomass") 
+ 
+  
+    grid.arrange(arrangeGrob (p1,p2,p3,p4,p5,p6,p7,p8, ncol=2, nrow=4, top = textGrob("average daily growth rate during last 7 days (mm/day)versus environmental variables", rot = 0, vjust = 0)))
+  
+  
+  
+         ggplot(master, aes(x=hess.den.sep, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "all streams hess.den.sep") 
+
+  
+         ggplot(master, aes(x=shann.sep, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "all streams shann.sep") 
+  
+  
+         ggplot(master, aes(x=drift.den.sep, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "all streams drift.den.sep") 
+ 
+
+         ggplot(master, aes(x=hess.den.jul, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "all streams hess.den.jul") 
+  
+  
+         ggplot(master, aes(x=shann.jul, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "all streams shann.jul") 
+   
+   
+#### plotting environmental variables against each other-----------------------------------------
+         
+    r2<-lm(formula = totN ~ totP, data = master)
+summary(r2)
+ggplot(master, aes(x=totN, y=totP)) +
+  geom_point() +    
+  geom_smooth(method=lm, se=FALSE)+
+  labs(x= "totN",y= "totP",title= "all streams totN versus totP")+
+  annotate("rect", xmin = 750, xmax = 1500, ymin = -5, ymax = 5, fill="white",                 colour="black")+ 
+  annotate("text", x=1000, y=0, label = "p_value == 0.007686", parse=T)+
+  annotate("text", x=1350, y=0, label = "R^2 == 0.008", parse=T)
+  
+  
+  r2<-lm(formula = chloro ~ afdm, data = master)
+summary(r2)
+ggplot(master, aes(x=afdm, y=chloro)) +
+  geom_point() +    
+  geom_smooth(method=lm, se=FALSE)+
+  labs(x= "afdm",y= "chloro",title= "all streams afdm versus chloro")+
+  annotate("rect", xmin = 0.03, xmax = 0.055, ymin = -100, ymax = 100, fill="white",                 colour="black")+ 
+  annotate("text", x=0.0375, y=-0.05, label = "p_value == 2.2e-16", parse=T)+
+  annotate("text", x=0.05, y=-0.05, label = "R^2 == 0.16", parse=T)
+  
+  
+  r2<-lm(formula = totN ~ afdm, data = master)
+summary(r2)
+ggplot(master, aes(x=totN, y=afdm)) +
+  geom_point() +    
+  geom_smooth(method=lm, se=FALSE)+
+  labs(x= "totN",y= "afdm",title= "all streams totN versus afdm")+
+  annotate("rect", xmin = 700, xmax = 1400, ymin = 0.001, ymax = 0.007, fill="white",                 colour="black")+ 
+  annotate("text", x=900, y=0.004, label = "p_value == 8.959e-07", parse=T)+
+  annotate("text", x=1300, y=0.004, label = "R^2 == 0.04", parse=T)
+ 
+  
+  r2<-lm(formula = totP ~ chloro, data = master)
+summary(r2)
+ggplot(master, aes(x=totP, y=chloro)) +
+  geom_point() +    
+  geom_smooth(method=lm, se=FALSE)+
+  labs(x= "totP",y= "chloro",title= "all streams totP versus chloro")+
+  annotate("rect", xmin = 25, xmax = 100, ymin = 75, ymax = -75, fill="white",                 colour="black")+ 
+  annotate("text", x=50, y=0.004, label = "p_value == 2.2e-16", parse=T)+
+  annotate("text", x=80, y=0.004, label = "R^2 == 0.16", parse=T)
+ 
+
+    r2<-lm(formula = totN ~ hess.biomass, data = master)
+summary(r2)
+p3<-ggplot(master, aes(x=totN, y=hess.biomass)) +
+  geom_point() +    
+  geom_smooth(method=lm, se=FALSE)+
+  labs(x= "totN",y= "hess.biomass",title= "all streams totN versus hess.biomass")+
+  annotate("rect", xmin = 100, xmax = 600, ymin = 0.01, ymax = -0.01, fill="white",                 colour="black")+ 
+  annotate("text", x=250, y=0, label = "p_value == 1.716e-13", parse=T)+
+  annotate("text", x=500, y=0, label = "R^2 == 0.14", parse=T)
+  p3+ scale_x_continuous(limits = c(0, 800))
+  
+
+
+  r2<-lm(formula = afdm ~ hess.biomass, data = master)
+summary(r2)
+ggplot(master, aes(x=afdm, y=hess.biomass)) +
+  geom_point() +    
+  geom_smooth(method=lm, se=FALSE)+
+  labs(x= "afdm",y= "hess.biomass",title= "all streams afdm versus hess.biomass")+
+  #annotate("rect", xmin = 0.025, xmax =0.05, ymin = 0, ymax = 0.04, fill="white",                 colour="black")+ 
+  annotate("text", x=0.0325, y=0.02, label = "p_value == 0.3557", parse=T)
+  #annotate("text", x=0.045, y=0.02, label = "R^2 == 0.0005", parse=T)
+  
+  r2<-lm(formula = afdm ~ drift.den.jul, data = master)
+summary(r2)
+ggplot(master, aes(x=afdm, y=drift.den.jul)) +
+  geom_point() +    
+  geom_smooth(method=lm, se=FALSE)+
+  labs(x= "afdm",y= "drift.den.jul",title= "all streams afdm versus drift.den.jul")+
+  #annotate("rect", xmin = 0.04, xmax =0.06, ymin = 0, ymax = 1, fill="white",                 colour="black")+ 
+  annotate("text", x=0.045, y=0.5, label = "p_value == 0.3791", parse=T)
+  #annotate("text", x=0.0455, y=0.5, label = "R^2 == 0.0008", parse=T)
+
+
+  r2<-lm(formula = afdm ~ drift.biomass, data = master)
+summary(r2)
+ggplot(master, aes(x=afdm, y=drift.biomass)) +
+  geom_point() +    
+  geom_smooth(method=lm, se=FALSE)+
+  labs(x= "afdm",y= "drift.biomass",title= "all streams afdm versus drift.biomass")+
+  annotate("text", x=0.045, y=0.1, label = "p_value ==0.02817", parse=T)
+
+  
+    r2<-lm(formula = totN ~ drift.biomass, data = master)
+summary(r2)
+p3<- ggplot(master, aes(x=totN, y=drift.biomass)) +
+  geom_point() +    
+  geom_smooth(method=lm, se=FALSE)+
+  labs(x= "totN",y= "drift.biomass",title= "all streams totN versus drift.biomass")+
+  annotate("text", x=500, y=0.1, label = "p_value ==0.1911", parse=T)
+ p3+ scale_x_continuous(limits = c(0, 900))
+
+ 
+   r2<-lm(formula = totP ~ drift.biomass, data = master)
+summary(r2)
+ggplot(master, aes(x=totP, y=drift.biomass)) +
+  geom_point() +    
+  geom_smooth(method=lm, se=FALSE)+
+  labs(x= "totP",y= "drift.biomass",title= "all streams totP versus drift.biomass")+
+  annotate("text", x=60, y=0.05, label = "p_value ==0.01036", parse=T)
+ 
+ 
+    r2<-lm(formula = hess.biomass ~ drift.biomass, data = master)
+summary(r2)
+ggplot(master, aes(x=hess.biomass, y=drift.biomass)) +
+  geom_point() +    
+  geom_smooth(method=lm, se=FALSE)+
+  labs(x= "hess.biomass",y= "drift.biomass",title= "all streams hess.biomass versus          drift.biomass")+
+  annotate("text", x=0, y=0, label = "p_value == 0.002548", parse=T)
+ 
+     r2<-lm(formula = hess.den.sep ~ drift.biomass, data = master)
+summary(r2)
+ggplot(master, aes(x=hess.den.sep, y=drift.biomass)) +
+  geom_point() +    
+  geom_smooth(method=lm, se=FALSE)+
+  labs(x= "hess.den.sep",y= "drift.biomass",title= "all streams hess.den.sep versus          drift.biomass")+
+  annotate("text", x=250, y=0, label = "p_value == 1.84e-05", parse=T)
+ 
+      r2<-lm(formula = hess.den.jul ~ drift.biomass, data = master)
+summary(r2)
+ggplot(master, aes(x=hess.den.jul, y=drift.biomass)) +
+  geom_point() +    
+  geom_smooth(method=lm, se=FALSE)+
+  labs(x= "hess.den.jul",y= "drift.biomass",title= "all streams hess.den.jul versus          drift.biomass")+
+  annotate("text", x=0, y=0, label = "p_value == 0.004744", parse=T)
+ 
+ 
+ 
+
+           ggplot(master, aes(x=afdm, y= hess.den.jul))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "all streams afdm versus hess.den.jul") 
+ 
+  
+ 
+           ggplot(master, aes(x=afdm, y= shann.jul))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "all streams afdm versus shann.jul")
+ 
+  
+
+         ggplot(master, aes(x=totN, y= shann.sep))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "all streams totN versus shann.sep") 
+ 
+  
+
+        ggplot(master, aes(x=totP, y= shann.jul))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "all streams totP versus shann.jul") 
+  
+  
+ 
+            ggplot(master, aes(x=totN, y= hess.den.sep))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "all streams totN versus hess.den.sep") 
+ 
+  
+ 
+        ggplot(master, aes(x=totP, y= hess.den.jul))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "all streams totP versus hess.den.jul") 
+ 
+  
+####histograms of collection dates--------------------------------------------------------------
+p1<-ggplot(data=master, aes(master$doy)) + 
+   geom_histogram()+
+   theme(panel.background = element_blank())+
+   labs(x= "day of year that fish were collected",y= "number of fish collected", title="collection dates") 
+p1
+   
+   VAL<-master[master$stream=='VAL',]
+p1<-ggplot(data=VAL, aes(VAL$doy)) + 
+   geom_histogram()+
+    labs(x= "VAL",y= "") 
+   
+   LAK<-master[master$stream=='LAK',]
+p2<-ggplot(data=LAK, aes(LAK$doy)) + 
+   geom_histogram()+
+   labs(x= "LAK",y= "") 
+   
+      SFS<-master[master$stream=='SFS',]
+p3<-ggplot(data=SFS, aes(SFS$doy)) + 
+   geom_histogram()+
+   labs(x= "SFS",y= "")
+   
+      ELK<-master[master$stream=='ELK',]
+p4<-ggplot(data=ELK, aes(ELK$doy)) + 
+   geom_histogram()+
+   labs(x= "ELK",y= "") 
+   
+      BVA<-master[master$stream=='BVA',]
+p5<-ggplot(data=BVA, aes(BVA$doy)) + 
+   geom_histogram()+
+   labs(x= "BVA",y= "") 
+   
+      CHO<-master[master$stream=='CHO',]
+p6<-ggplot(data=CHO, aes(CHO$doy)) + 
+   geom_histogram()+
+   labs(x= "CHO",y= "")
+   
+      MAR<-master[master$stream=='MAR',]
+p7<-ggplot(data=MAR, aes(MAR$doy)) + 
+   geom_histogram()+
+  labs(x= "MAR",y= "") 
+
+  grid.arrange(arrangeGrob (p1,p2,p3,p4,p5,p6,p7, ncol=3, nrow=3, top = textGrob("fish collected by day of year", rot = 0, vjust = 0)))
+  
+  
+     year03<-master[master$year=='2003',]
+p1<-ggplot(data=year03, aes(year03$doy)) + 
+   geom_histogram()
+
+     year04<-master[master$year=='2004',]
+p2<-ggplot(data=year04, aes(year04$doy)) + 
+   geom_histogram()
+   
+     year05<-master[master$year=='2005',]
+p3<-ggplot(data=year05, aes(year05$doy)) + 
+   geom_histogram()
+   
+     year06<-master[master$year=='2006',]
+p4<-ggplot(data=year06, aes(year06$doy)) + 
+   geom_histogram()
+   
+     year07<-master[master$year=='2007',]
+p5<-ggplot(data=year07, aes(year07$doy)) + 
+   geom_histogram()
+   
+     year08<-master[master$year=='2008',]
+p6<-ggplot(data=year08, aes(year08$doy)) + 
+   geom_histogram()
+   
+     year09<-master[master$year=='2009',]
+p7<-ggplot(data=year09, aes(year09$doy)) + 
+   geom_histogram()
+   
+     year10<-master[master$year=='2010',]
+p8<-ggplot(data=year10, aes(year10$doy)) + 
+   geom_histogram()
+   
+     year11<-master[master$year=='2011',]
+p9<-ggplot(data=year11, aes(year11$doy)) + 
+   geom_histogram()
+   
+     year12<-master[master$year=='2012',]
+p10<-ggplot(data=year12, aes(year12$doy)) + 
+   geom_histogram()
+   
+     year13<-master[master$year=='2013',]
+p11<-ggplot(data=year13, aes(year13$doy)) + 
+   geom_histogram()
+   
+     year14<-master[master$year=='2014',]
+p12<-ggplot(data=year14, aes(year14$doy)) + 
+   geom_histogram()
+   
+     year15<-master[master$year=='2015',]
+p13<-ggplot(data=year15, aes(year15$doy)) + 
+   geom_histogram()
+   
+     year16<-master[master$year=='2016',]
+p14<-ggplot(data=year16, aes(year16$doy)) + 
+   geom_histogram()
+   
+   
+  grid.arrange(arrangeGrob (p1+ scale_x_continuous(limits = c(190, 280)) ,p2+ scale_x_continuous(limits = c(190, 280)) ,p3+ scale_x_continuous(limits = c(190, 280)) ,p4+ scale_x_continuous(limits = c(190, 280)) ,p5+ scale_x_continuous(limits = c(190, 280)) ,p6+ scale_x_continuous(limits = c(190, 280)) ,p7+ scale_x_continuous(limits = c(190, 280)) ,p8+ scale_x_continuous(limits = c(190, 280)) ,p9+ scale_x_continuous(limits = c(190, 280)) ,p10+ scale_x_continuous(limits = c(190, 280)) ,p11+ scale_x_continuous(limits = c(190, 280)) ,p12+ scale_x_continuous(limits = c(190, 280)) ,p13+ scale_x_continuous(limits = c(190, 280)) ,p14+ scale_x_continuous(limits = c(190, 280)) , ncol=3, nrow=5, left = textGrob("", rot = 90, vjust = 2)))
+   
+####precocious males---------------------------------------------------------------------------
+
+         ggplot(master, aes(x=pm, y= gr7d))+
+  geom_point(aes(group = cut_width(year, 0.25)))+
+  labs(x= " ",y= "average daily growth rate during last 7 days of life (mm/day)",title= "all streams pecocious males versus juveniles") 
+  
+
+####temporal and spacial trends: ANCOVAs and post hoc Tukey tests---------------------------
+
+
+gr7dglm<-(glm(gr7d ~ year + stream + doy + oni +totN, data=master))
+summary(gr7dglm)
+
+spacial_temporal<-(glm(gr7d ~ year + doy + stream, data=master))
+summary(spacial)
+
+spacial<-(glm(gr7d ~ stream + doy, data=master))
+summary(spacial)
+
+temporal<-(glm(gr7d ~ year + doy, data=master))
+summary(temporal)
+
+waterchemp<-(glm(gr7d ~ totP, data=master))
+summary(waterchemp)
+
+waterchemn<-(glm(gr7d ~ totN, data=master))
+summary(waterchemn)
+
+master$year <- factor(master$year)
+master$stream <- factor(master$stream)
+master$doy <- factor(master$doy)
+
+
+summary(temporal<- aov(gr7d ~ year + doy, data = master))
+TukeyHSD(temporal, "year", ordered = TRUE)
+plot(TukeyHSD(temporal, "year"))
+
+
+summary(spacial<- aov(gr7d ~ stream + doy, data = master))
+TukeyHSD(spacial, "stream", ordered = TRUE)
+plot(TukeyHSD(spacial, "stream"))
+
+
+
+
+####temperature graPHS---------------------------------------------------------------------
+
+ggplot(master, aes(x=doy, y=daily_mean_7day))+
+  geom_point()+
+  geom_smooth()
+  labs(x= "day of year",y= "weekly average of stream temperatures",title= "")
+
+ggplot(master, aes(x=doy, y=daily_mean_7day))+
+  geom_point()+
+  labs(x= "day of year",y= "weekly average of stream temperatures",title= "")
+
+
+ggplot(master, aes(x=oni, y=daily_mean_7day))+
+  geom_point()+
+  labs(x= "el niño/la niña intensity index",y= "weekly average of stream temperatures",title= "")
+
+ggplot(master, aes(x=oni, y=gr7d))+
+  geom_point()+
+  geom_smooth()
+  labs(x= "",y= "",title= "")
+
+
+ggplot(master, aes(x=daily_mean_7day, y=gr7d))+
+  geom_point()+
+  labs(x= "weekly average of stream temperatures",y= "weekly average growth rate",title= "")
+  
+   hightemp<-master[master$daily_max_7day >= 15,]
+  ggplot(hightemp, aes(x = daily_max_7day, y = gr7d)) + geom_point()+
+theme_bw()+
+labs(x= "weekly average of stream temperatures (C)",y= "",title="average water temperature")+
+geom_smooth(method = "gam", formula =y ~ s(x, k=4), size = 1)
+  
+     hightemp2<-master[master$daily_max_7day >= 17.5,]
+  ggplot(hightemp2, aes(x = daily_max_7day, y = gr7d)) + geom_point()+
+theme_bw()+
+labs(x= "weekly average of stream temperatures (C)",y= "",title="average water temperature")+
+geom_smooth(method = "gam", formula =y ~ s(x, k=2), size = 1)
+
+###running GAMs on the data (these graphs are the nice ones I've tentatively made for the paper) -----------------------------------------------
+
+
+p3<- ggplot(master, aes(x = doy, y = gr7d)) + geom_point()+
+theme_bw()+
+labs(x= "day of year of capture",y= "",title= "average growth rate by capture date")+
+geom_smooth(method = "gam", formula =y ~ s(x, k=4), size = 1)
+
+p4<- ggplot(master, aes(x = daily_mean_7day, y = gr7d)) + geom_point()+
+theme_bw()+
+labs(x= "weekly average of stream temperatures (C)",y= "",title="average water temperature")+
+geom_smooth(method = "gam", formula =y ~ s(x, k=2), size = 1)
+
+p5<- ggplot(master, aes(x = oni, y = gr7d)) + geom_point()+
+theme_bw()+
+labs(x= "el niño/la niña intensity index",y= "daily growth rate (mm/day)",title= "el niño/la niña intensity index")+
+geom_smooth(method = "gam", formula =y ~ s(x, k=2), size = 1)
+
+p6<- ggplot(master, aes(x = pre.oni, y = gr7d)) + geom_point()+
+theme_bw()+
+labs(x= "prior el niño/la niña intensity index",y= "",title= "prior el niño/la niña intensity index")+
+geom_smooth(method = "gam", formula =y ~ s(x, k=2), size = 1)
+
+ggplot(master, aes(x = doy, y = depth_7day_average)) + geom_point()+
+theme(panel.background = element_blank())+
+labs(x= "day of year at capture",y= "weekly average water depth at time of capture",title= "")+
+geom_smooth(method = "gam", formula =y ~ s(x, k=2), size = 1)
+
+p1<-ggplot(master, aes(x = doy, y = daily_mean_7day)) + geom_point()+
+theme_bw()+
+labs(x= "day of year at capture",y= "weekly average of stream temperatures",title= "average daily water temperature over the spring/summer months")+
+geom_smooth(method = "gam", formula =y ~ s(x, k=4), size = 1)
+p1
+ggplot(master, aes(x = depth_7day_average, y = gr7d)) + geom_point()+
+theme(panel.background = element_blank())+
+labs(x= "weekly average water depth at time of capture",y= "daily average growth rate",title= "")+
+geom_smooth(method = "gam", formula =y ~ s(x, k=2), size = 1)
+
+
+excludeddepth<- master[ which(master$depth_7day_average > 3.5), ]
+newmaster<- master[ which(master$depth_7day_average < 1.0), ]
+
+p7<-ggplot(newmaster, aes(x = depth_7day_average, y = gr7d)) + geom_point()+
+theme_bw()+
+labs(x= "weekly average water depth at time of capture",y= "",title= "average water depth")+
+geom_smooth(method = "gam", formula =y ~ s(x, k=2), size = 1)
+
+p8<-ggplot(master, aes(x = drift.biomass, y = gr7d)) + geom_point()+
+theme_bw()+
+xlim(0, 0.07)+
+labs(x= "drift invert biomass (g/m^3 of water)",y= "",title= "prey biomass in drift samples")+
+geom_smooth(method = "gam", formula =y ~ s(x, k=2), size = 1)
+p8
+p2<-ggplot(master, aes(x= stream, y= daily_mean_7day))+
+  geom_boxplot()+
+  theme_bw()+
+  labs(x= " ",y= "average daily temperature (C)",title= "average daily temperature in streams")
+  p2
+  
+  
+   #graphing other environmental data and putting the graphs together
+   
+   
+    grid.arrange(arrangeGrob (p1,p2, ncol=1, nrow=2, top = textGrob("", rot = 0, vjust = 0)))
+    
+    grid.arrange(arrangeGrob (p3,p4,p5,p6,p7,p8, ncol=2, nrow=3, top = textGrob("", rot = 0, vjust = 0)))
+    
+  #graphing nitrogen and phosphorus 
+  
+    p9<-ggplot(master, aes(x = totP, y = gr7d)) + geom_point()+
+theme_bw()+
+labs(x= "",y= "",title= "total phosphorus in the water (ng/L)")+
+geom_smooth(method = lm)
+p9
+p10<-ggplot(master, aes(x = totN, y = gr7d)) + geom_point()+
+theme_bw()+
+labs(x= "",y= "average daily growth rate (mm/day)",title= "total nitrogen in the water (ng/L)")+
+geom_smooth(method =lm)
+    p11<-ggplot(master, aes(x = PO4, y = gr7d)) + geom_point()+
+theme_bw()+
+labs(x= "",y= "",title= "phosphate in the water (ng/L)")+
+geom_smooth(method = lm)
+
+p12<-ggplot(master, aes(x = NO3, y = gr7d)) + geom_point()+
+theme_bw()+
+labs(x= "",y= "average daily growth rate (mm/day)",title= "nitrate in the water (ng/L)")+
+geom_smooth(method = lm)
+p12
+grid.arrange(arrangeGrob (p9,p10,p11,p12, ncol=2, nrow=2, top = textGrob("", rot = 0, vjust = 0)))
+?geom_smooth
+#### GAMs temperature versus growth by stream----------------------------
+
+tempgrowthLAK<-gam(gr7d ~ s(daily_mean_7day,2), data=LAK,
+trace=TRUE)
+plot(tempgrowthLAK)
+
+
+tempgrowthSFS<-gam(gr7d ~ s(daily_mean_7day,2), data=SFS,
+trace=TRUE)
+plot(tempgrowthSFS)
+
+
+tempgrowthVAL<-gam(gr7d ~ s(daily_mean_7day,2), data=VAL,
+trace=TRUE)
+plot(tempgrowthVAL)
+
+
+tempgrowthMAR<-gam(gr7d ~ s(daily_mean_7day,2), data=MAR,
+trace=TRUE)
+plot(tempgrowthMAR)
+
+
+tempgrowthCHO<-gam(gr7d ~ s(daily_mean_7day,2), data=CHO,
+trace=TRUE)
+plot(tempgrowthCHO)
+
+
+tempgrowthELK<-gam(gr7d ~ s(daily_mean_7day,2), data=ELK,
+trace=TRUE)
+plot(tempgrowthELK)
+
+
+tempgrowthBVA<-gam(gr7d ~ s(daily_mean_7day,2), data=BVA,
+trace=TRUE)
+plot(tempgrowthBVA)
+
+#### correlation matrix---------------------------------------------------
+library(corrplot)
+library(ggplot2)
+library(ggcorrplot)
+colnames(master2)[8] <- "invert_shannon_Index_Sept"
+colnames(master2)[12] <- "invert_shannon_Index_July"
+colnames(master2)[13] <- "el_niño_la_niña_intensity"
+colnames(master2)[14] <- "prior_el_niño_la_niña_intensity"
+p.mat <- cor_pmat(master2)
+corr<-cor(master2, use="pairwise.complete.obs")
+
+ggcorrplot(corr, type = "lower", outline.col = "white", p.mat = p.mat, insig ="blank", title = "correlation matrix for environmental variables", colors = c("#E46726", "white", "#6D9EC1"))
+
+
+####---growth rate over time------------------------------------------------
+
+
+
+library(reshape)
+library(ggplot2)
+library(gridExtra)
+Molten <- melt(flv1, id.vars = "doy")
+colnames(Molten)[2] <- "stream"
+  #plot it
+  
+ggplot(Molten, aes(x = doy, y = value, colour = stream))+
+  geom_smooth(method = lm)
+
+p1<-ggplot(Molten, aes(x = doy, y = value, colour = stream))+ 
+    geom_smooth(method = "gam", formula =y ~ s(x, k=3), size = 1)+
+    ylim(0.05, 0.35)+
+    theme_bw() +
+        scale_color_manual(values = c('VAL'='#e41a1c','CHO'='#377eb8','MAR'='#4daf4a','BVA'='#984ea3','ELK'='#ff7f00','SFS'='#4d4d4d','LAK'='#a65628'))+
+    labs(x= "",y= "somatic growth rate (mm/day)",title= "")
+ p1 
+
+
+Molten2 <- melt(doy121_260, id.vars = "doy")
+colnames(Molten2)[2] <- "stream"
+
+p2<-ggplot(Molten2, aes(x = doy, y = value, colour = stream))+ 
+    geom_smooth(method = "gam", formula =y ~ s(x, k=4), size = 1)+
+    theme_bw() +
+    scale_color_manual(values = c('VAL'='#e41a1c','CHO'='#377eb8','MAR'='#4daf4a','BVA'='#984ea3','ELK'='#ff7f00','SFS'='#4d4d4d','LAK'='#a65628'))+
+    labs(x= "day of year",y= "fork length over time (mm)",title= "")+
+    theme(legend.position="none")
+library(grid)
+  grid.arrange(arrangeGrob (p1,p2, ncol=1, nrow=2, top = textGrob("", rot = 0, vjust = 0)))
+
+##using all the data without taking averages first. I think this is better than the way I was doing it above----------------------------------------------------------------------------------
+
+write.csv(Molten, "molten.csv")
+flv1_0 = read.csv (file= "U://otolith project//merged water temp data//juvenile FLv1.0.csv")
+ggplot(flv1_0, aes(x = doy, y = fl, colour = stream))+
+  geom_smooth(method = lm)
+
+p1<- ggplot(flv1_0, aes(x = doy, y = growth, colour = stream))+ 
+    geom_smooth(method = "gam", formula =y ~ s(x, k=3), size = 1)+
+    ylim(0.05, 0.35)+
+    xlim(120, 260)+
+    theme_bw() +
+        scale_color_manual(values = c('VAL'='#e41a1c','CHO'='#377eb8','MAR'='#4daf4a','BVA'='#984ea3','ELK'='#ff7f00','SFS'='#4d4d4d','LAK'='#a65628'))+
+    labs(x= "",y= "somatic growth rate (mm/day)",title= "")
+p1
+
+p2<-ggplot(flv1_0, aes(x = doy, y = fl, colour = stream))+ 
+    geom_smooth(method = "gam", formula =y ~ s(x, k=4), size = 1)+
+    xlim(120, 260)+
+    theme_bw() +
+    scale_color_manual(values = c('VAL'='#e41a1c','CHO'='#377eb8','MAR'='#4daf4a','BVA'='#984ea3','ELK'='#ff7f00','SFS'='#4d4d4d','LAK'='#a65628'))+
+    labs(x= "day of year",y= "fork length over time (mm)",title= "")+
+    theme(legend.position="none")
+library(grid)
+  grid.arrange(arrangeGrob (p1,p2, ncol=1, nrow=2, top = textGrob("", rot = 0, vjust = 0)))
+ p2 
+  
+  
+##bar graphs of fork length and beggining and end of summer, pretty much the same thing as above, but presented differently-----------------------------------------------------------------------  
+  
+  subsetend<-flv1_0[flv1_0$doy=='250',]
+  
+  subsetstart<-flv1_0[flv1_0$doy=='140',]
+  
+p3<- ggplot(subsetstart, aes(x= stream, y= fl))+
+  geom_boxplot()+
+  theme_bw()+ 
+  ylim(20, 90)+
+  labs(x= "mid May",y= "fork length (mm)",title= "")
+p3
+p4<- ggplot(subsetend, aes(x= stream, y= fl))+
+  geom_boxplot()+
+  theme_bw()+ 
+  ylim(20, 90)+
+  labs(x= "mid September",y= "",title= "")
+ p4 
+ grid.arrange(arrangeGrob (p3,p4, ncol=2, nrow=1, top = textGrob("fork length in mid-May compared to mid-September", rot = 0, vjust = 1.5))) 
+  
+## individual streams, not really useful...---------------------------------------------------  
+BVA= read.csv (file= "U://otolith project//merged water temp data//juvenile measurements//BVA.csv")
+CHO= read.csv (file= "U://otolith project//merged water temp data//juvenile measurements//CHO.csv")
+ELK= read.csv (file= "U://otolith project//merged water temp data//juvenile measurements//ELK.csv")
+MAR= read.csv (file= "U://otolith project//merged water temp data//juvenile measurements//MAR.csv")
+LAK= read.csv (file= "U://otolith project//merged water temp data//juvenile measurements//LAK.csv")
+SFS= read.csv (file= "U://otolith project//merged water temp data//juvenile measurements//SFS.csv")
+VAL= read.csv (file= "U://otolith project//merged water temp data//juvenile measurements//VAL.csv")
+
+Moltenbva <- melt(BVA, id.vars = "doy")
+
+ggplot(Moltenbva, aes(x = doy, y = value, colour = variable))+ 
+    geom_smooth(se=FALSE)+
+    theme(legend.position="none")+
+    ylim(1, 5)+
+    xlim(100, 260)
+
+
+Moltencho <- melt(CHO, id.vars = "doy")
+
+ggplot(Moltencho, aes(x = doy, y = value, colour = variable))+ 
+    geom_smooth(se=FALSE)+
+    theme(legend.position="none")+
+    ylim(0.5, 5)+
+    xlim(120, 270)
+    
+    Moltenelk <- melt(ELK, id.vars = "doy")
+
+ggplot(Moltenelk, aes(x = doy, y = value, colour = variable))+ 
+    geom_smooth(se=FALSE)+
+    theme(legend.position="none")+
+    ylim(0.5, 5)+
+    xlim(120, 270)
+    
+    Moltenmar <- melt(MAR, id.vars = "doy")
+
+ggplot(Moltenmar, aes(x = doy, y = value, colour = variable))+ 
+    geom_smooth(se=FALSE)+
+    theme(legend.position="none")+
+    ylim(0.5, 5)+
+    xlim(120, 270)
+    
+    Moltenval <- melt(VAL, id.vars = "doy")
+
+ggplot(Moltenval, aes(x = doy, y = value, colour = variable))+ 
+    geom_smooth(se=FALSE)+
+    theme(legend.position="none")+
+    ylim(0.5, 5)+
+    xlim(120, 270)
+    
+    Moltenlak <- melt(LAK, id.vars = "doy")
+
+ggplot(Moltenlak, aes(x = doy, y = value, colour = variable))+ 
+    geom_smooth(se=FALSE)+
+    theme(legend.position="none")+
+    ylim(0.5, 5)+
+    xlim(120, 270)
+    
+    Moltensfs <- melt(SFS, id.vars = "doy")
+
+ggplot(Moltensfs, aes(x = doy, y = value, colour = variable))+ 
+    geom_smooth(se=FALSE)+
+    theme(legend.position="none")+
+    ylim(0.5, 5)+
+    xlim(120, 270)
+
+
+####daily average temp------------------------------------------------------------------------
+Molten <- melt(dailyaverage, id.vars = "doy")
+
+    ggplot(Molten, aes(x = doy, y = value, colour = variable))+ 
+    geom_smooth(se=FALSE)+
+    theme_bw()+
+    scale_color_brewer(palette = "Dark2")+
+    ylim(3, 17.5)
+    
+    
+      p1<-ggplot(Molten, aes(x = doy, y = value)) + geom_point()+
+theme_bw()+
+labs(x= "day of year",y= "",title= "average daily water temperature over the spring/summer months")+
+geom_smooth(method = "gam", formula =y ~ s(x, k=4), size = 1)+
+xlim(122, 303)
+  p1
+    
+p2<-ggplot(master, aes(x= stream, y= daily_mean_7day))+
+  geom_boxplot()+
+  theme_bw()+
+  labs(x= " ",y= "                                                                average daily water temperature (C)",title= "")
+  p2
+  
+    grid.arrange(arrangeGrob (p1,p2, ncol=1, nrow=2, top = textGrob("", rot = 0, vjust = 0)))
+
+
+
+#### SFS fires---------------------------------------------------------------------------------
+
+SFSfiresv2 = read.csv (file= "U://otolith project//merged water temp data//juvenile measurements//SFSfiresv2.csv")
+
+Moltensfs <- melt(SFSfiresv2, id.vars = "doy")
+
+
+
+ggplot(Moltensfs, aes(x=doy, y= value, colour = variable))+
+  geom_smooth(method = "gam", formula =y ~ s(x, k=3), size = 1)+
+  scale_colour_brewer(palette = "Set1")
+  
+  
+  
+
+#### nitrate and phosphate, also stream productivity graphed by month, SUPER COOL!!!---------------
+nitphos = read.csv (file= "U://otolith project//merged water temp data//nitphos.csv")
+
+nitphos2<- aggregate(nitphos$NO3_N, list(nitphos$DATE_COLL, nitphos$STRM_CODE), mean)
+nitphos3<- aggregate(nitphos$PO4_P, list(nitphos$DATE_COLL, nitphos$STRM_CODE), mean)
+
+write.csv(nitphos2, "nitphos2.csv")
+write.csv(nitphos3, "nitphos3.csv")
+nitphos = read.csv (file= "U://otolith project//merged water temp data//nitphos merged.csv")
+master = read.csv (file= "U://otolith project//merged water temp data//v6master.csv")
+
+
+masterwithnitphos<-merge(master, y=nitphos, by=c("stream","date"),all.x=T)
+
+write.csv(masterwithnitphos, "masterwithnitphos.csv")
+
+
+
+ggplot(master, aes(x = month, y = totP)) + geom_point()+
+theme_bw()+
+geom_smooth(method = lm)
+
+ggplot(master, aes(x = month, y = totN)) + geom_point()+
+theme_bw()+
+geom_smooth(method = lm)
+
+ggplot(master, aes(x = month, y = drift.biomass)) + geom_point()+
+theme_bw()+
+geom_smooth(method = lm)
+
+ggplot(master, aes(x = month, y = hess.biomass)) + geom_point()+
+theme_bw()+
+geom_smooth(method = lm)
+
+ggplot(master, aes(x = month, y = afdm)) + geom_point()+
+theme_bw()+
+geom_smooth(method = lm)
+#### standardizing the gr7d data by doy and by fork length---------------------------------------
+
+doystandarized= read.csv (file= "U://otolith project//merged water temp data//doystandarized worksheet.csv")
+
+masterwithdoystd<-merge(master, y=doystandarized, by="id.1",all.x=T)
+
+write.csv(masterwithdoystd, "masterwithdoystd.csv")
+
+#### temperature boxplot experiment - what happened in 2009???----------------------------------
+
+tempboxplot= read.csv (file= "U://otolith project//merged water temp data//daily average for boxplot experiment.csv")
+
+
+
+p1<-ggplot(tempboxplot, aes(x= year, y= all_streams, group=year))+
+  geom_boxplot()
+p1
+p2<-ggplot(tempboxplot, aes(x= year, y= daily_mean.BVA, group=year))+
+  geom_boxplot()
+  
+p3<-ggplot(tempboxplot, aes(x= year, y= daily_mean.ELK, group=year))+
+  geom_boxplot()
+  
+p4<-ggplot(tempboxplot, aes(x= year, y= daily_mean.LAK, group=year))+
+  geom_boxplot()
+  
+p5<- ggplot(tempboxplot, aes(x= year, y= daily_mean.MAR, group=year))+
+  geom_boxplot()
+  
+p6<-ggplot(tempboxplot, aes(x= year, y= daily_mean.SFS, group=year))+
+  geom_boxplot()
+  
+p7<-ggplot(tempboxplot, aes(x= year, y= daily_mean.VAL, group=year))+
+  geom_boxplot()
+  
+p8<-ggplot(tempboxplot, aes(x= year, y= daily_mean_CHO, group=year))+
+  geom_boxplot()
+
+
+grid.arrange(arrangeGrob (p1,p2,p3,p4,p5,p6,p7,p8, ncol=2, nrow=4, top = textGrob("", rot = 0, vjust = 0)))
+
+#### comparing team carcass temp data to achord 2003-2009-------------------------------------
+setwd("U://otolith project//merged water temp data//comparing achord and carcass temp data 2003 through 2008") 
+
+library(reshape)
+library(ggplot2)
+library(gridExtra)
+
+  ##merging the data##
+  
+achordmar= read.csv (file= "U://otolith project//merged water temp data//comparing achord and carcass temp data 2003 through 2008//achord mar.csv")
+mean<-aggregate(achordmar$temp, list(date=achordmar$date,stream=achordmar$stream), mean)
+write.csv(mean, "mean.csv")
+
+achordsfs= read.csv (file= "U://otolith project//merged water temp data//comparing achord and carcass temp data 2003 through 2008//achord sfs.csv")
+mean<-aggregate(achordsfs$temp, list(date=achordsfs$date,stream=achordsfs$site), mean)
+write.csv(mean, "mean2.csv")
+
+achordval= read.csv (file= "U://otolith project//merged water temp data//comparing achord and carcass temp data 2003 through 2008//achord val.csv")
+mean<-aggregate(achordval$temp, list(date=achordval$date,stream=achordval$site), mean)
+write.csv(mean, "mean3.csv")
+
+carcassmar= read.csv (file= "U://otolith project//merged water temp data//comparing achord and carcass temp data 2003 through 2008//carcass MAR temp.csv")
+mean<-aggregate(carcassmar$temp, list(date=carcassmar$date,stream=carcassmar$stream), mean)
+write.csv(mean, "mean4.csv")
+
+carcasssfs= read.csv (file= "U://otolith project//merged water temp data//comparing achord and carcass temp data 2003 through 2008//carcass SFS temp.csv")
+mean<-aggregate(carcasssfs$temp, list(date=carcasssfs$date,stream=carcasssfs$stream), mean)
+write.csv(mean, "mean5.csv")
+
+carcassval= read.csv (file= "U://otolith project//merged water temp data//comparing achord and carcass temp data 2003 through 2008//carcass VAL temp.csv")
+mean<-aggregate(carcassval$temp, list(date=carcassval$date,stream=carcassval$stream), mean)
+write.csv(mean, "mean6.csv")
+
+  ##plotting the data all streams all years
+
+
+alldata= read.csv (file= "U://otolith project//merged water temp data//comparing achord and carcass temp data 2003 through 2008//mean.csv")
+
+p1<- ggplot(alldata, aes(x = date, y = temp, colour = collector))+
+geom_point()+
+scale_color_manual(values = c('achord'='#e41a1c','carcass'='#377eb8'))
+p1
+achord<-alldata[alldata$collector=='achord',]
+
+carcass<-alldata[alldata$collector=='carcass',]
+
+p2<- ggplot(achord, aes(x = date, y = temp))+
+geom_point()+
+labs(x= "",y= "",title= "achord")
+
+p3<- ggplot(carcass, aes(x = date, y = temp))+
+geom_point()+
+labs(x= "",y= "",title= "carcass")
+
+
+grid.arrange(arrangeGrob (p1,p2,p3, ncol=1, nrow=3, top = textGrob("", rot = 0, vjust = 0)))
+
+  ##plotting the data by stream
+
+sfs<-alldata[alldata$stream=='South Fork Salmon',]
+mar<-alldata[alldata$stream=='Marsh Creek',]
+val<-alldata[alldata$stream=='Valley Creek',]
+
+p1a<- ggplot(sfs, aes(x = date, y = temp, colour = collector))+
+geom_point()+
+scale_color_manual(values = c('achord'='#e41a1c','carcass'='#377eb8'))+
+labs(x= "",y= "",title= "sfs")
+
+p2a<- ggplot(mar, aes(x = date, y = temp, colour = collector))+
+geom_point()+
+scale_color_manual(values = c('achord'='#e41a1c','carcass'='#377eb8'))+
+labs(x= "",y= "",title= "mar")
+
+p3a<- ggplot(val, aes(x = date, y = temp, colour = collector))+
+geom_point()+
+scale_color_manual(values = c('achord'='#e41a1c','carcass'='#377eb8'))+
+labs(x= "",y= "",title= "val")
+
+
+grid.arrange(arrangeGrob (p1a,p2a,p3a, ncol=1, nrow=3, top = textGrob("", rot = 0, vjust = 0)))
+
+  ## making a x-y plot of carcass versus achord to see how off from 1:1 we are---------------------
+  
+  
+  
+alldata= read.csv (file= "U://otolith project//merged water temp data//comparing achord and carcass temp data 2003 through 2008//mean.csv")
+  
+  sfs<-alldata[alldata$stream=='South Fork Salmon',]
+mar<-alldata[alldata$stream=='Marsh Creek',]
+val<-alldata[alldata$stream=='Valley Creek',]
+
+write.csv(val, "val.csv")
+
+
+
+
+ggplot(val, aes(x =date, y = temp, colour = collector))+
+geom_point()
+  
+  
+  ggplot(val, aes(x =date, y = date, colour = temp))+
+geom_point()
+  
+  
+  ## plotting collection day by year -----------------------------------------------------------
+   ggplot(master, aes(x =year, y = doy))+
+geom_point()
+   
+   
+   
+#### making 2009-2012 correction factor -------------------------------------------------------
+   rm(list = ls())
+   setwd("U://otolith project//merged water temp data//comparing achord and carcass temp data 2003 through 2008//making 2009-2012 correction factors") 
+
+library(reshape)
+library(ggplot2)
+library(gridExtra)
+   
+ 
+carcass= read.csv (file= "U://otolith project//merged water temp data//comparing achord and carcass temp data 2003 through 2008//making 2009-2012 correction factors//carcass 2009_to_2012.csv")
+
+mean<-aggregate(carcass$temp, list(date=carcass$date,stream=carcass$stream), mean)
+write.csv(mean, "carcassmean.csv")  
+
+carcasstemp= read.csv (file= "U://otolith project//merged water temp data//comparing achord and carcass temp data 2003 through 2008//making 2009-2012 correction factors//carcassmean.csv")
+
+achordtemp= read.csv (file= "U://otolith project//merged water temp data//comparing achord and carcass temp data 2003 through 2008//making 2009-2012 correction factors//Achord 2009_2012.csv")
+   
+achordandcarcass<-merge(achordtemp, y=carcasstemp, by=c("doy","year"),all.x=T, all.y=T)
+ write.csv(achordandcarcass, "achordandcarcass.csv") 
+ 
+mastertempcorr= read.csv (file= "U://otolith project//merged water temp data//comparing achord and carcass temp data 2003 through 2008//making 2009-2012 correction factors//achordandcarcass_cleaned_up.csv")
+ 
+BVA<-mastertempcorr[mastertempcorr$stream=='BVA',]
+ELK<-mastertempcorr[mastertempcorr$stream=='ELK',]
+MAR<-mastertempcorr[mastertempcorr$stream=='MAR',]
+VAL<-mastertempcorr[mastertempcorr$stream=='VAL',]
+CHO<-mastertempcorr[mastertempcorr$stream=='CHO',]
+SFS<-mastertempcorr[mastertempcorr$stream=='SFS',]
+LAK<-mastertempcorr[mastertempcorr$stream=='LAK',]
+
+ggplot(VAL, aes(x =order, y = difference))+
+geom_point()
+
+  t.test(VAL$order, VAL$difference)
+data:  VAL$order and VAL$difference
+t = 22.343, df = 169.09, p-value < 2.2e-16
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+ 76.90042 91.80645
+sample estimates:
+mean of x mean of y 
+85.500000  1.146561 
+
+ggplot(SFS, aes(x =order, y = difference))+
+geom_point()
+
+  t.test(SFS$order, SFS$difference)
+data:  SFS$order and SFS$difference
+t = 24.078, df = 196.09, p-value < 2.2e-16
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+  89.80271 105.82621
+sample estimates:
+mean of x mean of y 
+99.000000  1.185537 
+
+ggplot(LAK, aes(x =order, y = difference))+
+geom_point()
+
+  t.test(LAK$order, LAK$difference)
+data:  LAK$order and LAK$difference
+t = 24.738, df = 202.02, p-value < 2.2e-16
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+  93.86843 110.12857
+sample estimates:
+  mean of x   mean of y 
+1.02000e+02 0.00149779
+
+ggplot(CHO, aes(x =order, y = difference))+
+geom_point()
+
+  t.test(CHO$order, CHO$difference)
+data:  CHO$order and CHO$difference
+t = 22.966, df = 177.03, p-value < 2.2e-16
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+ 81.08196 96.32646
+sample estimates:
+ mean of x  mean of y 
+89.5000000  0.7957902 
+
+ggplot(MAR, aes(x =order, y = difference))+
+geom_point()
+
+  t.test(MAR$order, MAR$difference)
+data:  MAR$order and MAR$difference
+t = 23.11, df = 177.1, p-value < 2.2e-16
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+ 81.64423 96.89016
+sample estimates:
+ mean of x  mean of y 
+89.5000000  0.2328036 
+
+ggplot(ELK, aes(x =order, y = difference))+
+geom_point()
+
+  t.test(ELK$order, ELK$difference)
+data:  ELK$order and ELK$difference
+t = 20.394, df = 139.05, p-value < 2.2e-16
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+ 63.13542 76.69150
+sample estimates:
+ mean of x  mean of y 
+70.5000000  0.5865384 
+
+ggplot(BVA, aes(x =order, y = difference))+
+geom_point()
+
+  t.test(BVA$order, BVA$difference)
+data:  BVA$order and BVA$difference
+t = 19.961, df = 138.06, p-value < 2.2e-16
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+ 61.43348 74.94243
+sample estimates:
+mean of x mean of y 
+70.000000  1.812049 
+
+
+testcorr= read.csv (file= "U://otolith project//merged water temp data//comparing achord and carcass temp data 2003 through 2008//making 2009-2012 correction factors//test correction factor.csv")
+
+marcorr<-testcorr[testcorr$stream=='Marsh Creek',]
+valcorr<-testcorr[testcorr$stream=='Valley Creek',]
+sfscorr<-testcorr[testcorr$stream=='South Fork Salmon',]
+
+ggplot(marcorr, aes(x =date, y = carcass.corrected, colour = collector))+
+geom_point()
+
+ggplot(valcorr, aes(x =date, y = carcass.corrected, colour = collector))+
+geom_point()
+
+ggplot(sfscorr, aes(x =date, y = carcass.corrected, colour = collector))+
+geom_point()
+
+ggplot(marcorr, aes(x =date, y = corrected.difference))+
+geom_point()
+
+ggplot(valcorr, aes(x =date, y = corrected.difference))+
+geom_point()
+
+ggplot(sfscorr, aes(x =date, y = corrected.difference))+
+geom_point()+
+ylim(3,-3)
+
+#### CPUE data included, some exploratory graphing
+cpuenoseine = read.csv (file= "U://otolith project//merged water temp data//CPUE03to2018noseine.csv")
+mastercpue<-merge(master, y=cpuenoseine, by=c("stream","year"),all.x=T)
+
+
+
+  t.test(master$CPUE,master$gr7d)
+	Welch Two Sample t-test
+
+data:  master$CPUE and master$gr7d
+t = 51.736, df = 853.84, p-value < 2.2e-16
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+ 5.076436 5.476806
+sample estimates:
+mean of x mean of y 
+5.6030246 0.3264037 
+
+
+BVA<-master[master$stream=='BVA',]
+ELK<-master[master$stream=='ELK',]
+MAR<-master[master$stream=='MAR',]
+VAL<-master[master$stream=='VAL',]
+CHO<-master[master$stream=='CHO',]
+SFS<-master[master$stream=='SFS',]
+LAK<-master[master$stream=='LAK',]
+
+  ggplot(master, aes(x =CPUE, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")
+
+  ggplot(LAK, aes(x =CPUE, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")
+
+  ggplot(SFS, aes(x =CPUE, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")
+
+  ggplot(VAL, aes(x =CPUE, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")
+
+  ggplot(CHO, aes(x =CPUE, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")
+
+  ggplot(MAR, aes(x =CPUE, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")
+
+  ggplot(ELK, aes(x =CPUE, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")
+
+  ggplot(BVA, aes(x =CPUE, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")
+
+up<-master[master$stream==c('SFS','LAK'),]
+down<-master[master$stream==c('VAL','CHO','MAR','ELK','BVA'),]
+
+  ggplot(up, aes(x =CPUE, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")
+
+  ggplot(down, aes(x =CPUE, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")
+
+  # CPUE data with seine influenced data removed
+
+cpuenoseine = read.csv (file= "U://otolith project//merged water temp data//CPUE03to2018noseine.csv")
+mastercpue<-merge(master, y=cpuenoseine, by=c("stream","year"),all.x=T)
+
+  ggplot(mastercpue, aes(x =CPUE.y, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")+
+theme_bw()+
+labs(x= "catch per unit effort",y= "daily growth rate (mm/day)",title= "average growth rate by catch per unit effort")
+
+  t.test(mastercpue$CPUE.y,master$gr7d)
+
+	Welch Two Sample t-test
+
+data:  mastercpue$CPUE.y and master$gr7d
+t = 60.963, df = 604.36, p-value < 2.2e-16
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+ 4.467475 4.764892
+sample estimates:
+mean of x mean of y 
+4.9425871 0.3264037 
+
+BVA1<-mastercpue[mastercpue$stream=='BVA',]
+ELK1<-mastercpue[mastercpue$stream=='ELK',]
+MAR1<-mastercpue[mastercpue$stream=='MAR',]
+VAL1<-mastercpue[mastercpue$stream=='VAL',]
+CHO1<-mastercpue[mastercpue$stream=='CHO',]
+SFS1<-mastercpue[mastercpue$stream=='SFS',]
+LAK1<-mastercpue[mastercpue$stream=='LAK',]
+
+
+ ggplot(LAK1, aes(x =CPUE.y, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")
+
+  ggplot(SFS1, aes(x =CPUE.y, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")
+
+  ggplot(VAL1, aes(x =CPUE.y, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")
+
+  ggplot(CHO1, aes(x =CPUE.y, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")
+
+  ggplot(MAR1, aes(x =CPUE.y, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")
+
+  ggplot(ELK1, aes(x =CPUE.y, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")
+
+  ggplot(BVA1, aes(x =CPUE.y, y = gr7d))+
+geom_point()+
+geom_smooth(method = "lm")
+
+
