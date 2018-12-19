@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 <br/>
 
 [__Mark Scheuerell__](https://faculty.washington.edu/scheuerl/)  
-_Northwest Fisheries Science Center, National Oceanic and Atmospheric Administration, Seattle, WA, USA_
+_Fish Ecology Division, Northwest Fisheries Science Center, National Marine Fisheries Service, National Oceanic and Atmospheric Administration, Seattle, WA, USA_
 
 __Karl Veggerby__  
 _Ocean Associates, Seattle, WA, USA_
@@ -32,8 +32,42 @@ This is version `r paste0('0.',format(Sys.time(), '%y.%m.%d'))`.
 
 # Requirements
 
-```{r load_pkgs}
-library(here)
+```{r load_pkgs, message=FALSE}
+## for analysis
 library(MARSS)
+## for dir mgmt
+library(here)
+datadir <- here("data")
 ```
 
+# Data munging
+
+We begin by loading the data file with the temperature summaries by time (rows) and location (cols).
+
+```{r load_covars}
+## load obs covariates
+cobs <- read.csv(file.path(datadir, "daily_mean_temp.csv"),
+                 stringsAsFactors = FALSE)
+## inspect data
+head(cobs)
+```
+
+Let's simplify some names in the file and round the observations to the nearest 0.01.
+
+```{r change_colnames}
+## simplify colnames
+colnames(cobs) <- gsub("data_source", replacement = "s", x = colnames(cobs))
+colnames(cobs) <- gsub("daily_mean", replacement = "T", x = colnames(cobs))
+## site abbrevs
+sites <- gsub("T_", replacement = "", x = colnames(cobs)[10:16])
+## simplify sources
+cobs[cobs=="team carcass"] <- "car"
+cobs[cobs=="achord_gordy"] <- "tag"
+## round temps
+cobs[,grep("T_", colnames(cobs))] <- round(cobs[,grep("T_", colnames(cobs))], 2)
+## inspect
+head(cobs)
+tail(cobs)
+```
+
+The temperature data come from two different sources: the food web group (Sanderson et al.) and the juvenile tagging group (Achord, Axel et al.).
