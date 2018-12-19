@@ -70,4 +70,29 @@ head(cobs)
 tail(cobs)
 ```
 
-The temperature data come from two different sources: the food web group (Sanderson et al.) and the juvenile tagging group (Achord, Axel et al.).
+The temperature data come from two different sources: 1) the food web group (Sanderson et al.), and 2) the juvenile tagging group (Achord, Axel et al.). We need to split the data out by those groups.
+
+```{r split_obs_grps}
+## empty data frames
+car <- tag <- matrix(NA, nrow(cobs), length(sites),
+                     dimnames = list(NULL, sites))
+## measurements
+vals <- cobs[,-(1:9)]
+## indices of data type
+i_car <- cobs[,3:9] == "car"
+i_tag <- cobs[,3:9] == "tag"
+## group-specific data
+car[i_car] <- vals[i_car]
+tag[i_tag] <- vals[i_tag]
+## drop any sites with all NA's
+car <- car[,apply(car, 2, function(x) !all(is.na(x)))]
+colnames(car) <- paste0(colnames(car), "_car")
+tag <- tag[,apply(tag, 2, function(x) !all(is.na(x)))]
+colnames(tag) <- paste0(colnames(tag), "_tag")
+## regroup by sites & source
+cobs_m <- cbind(car, tag)
+cobs_m <- cobs_m[,sort(colnames(cobs_m))]
+head(cobs_m)
+matplot(cobs_m, type="l", lty="solid")
+```
+
