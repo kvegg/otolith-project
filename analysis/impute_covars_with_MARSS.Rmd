@@ -1,0 +1,39 @@
+---
+title: "Imputation of missing covariates"
+output:
+  html_document:
+    theme: cerulean
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    fig_caption: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br/>
+
+[__Mark Scheuerell__](https://faculty.washington.edu/scheuerl/)  
+_Northwest Fisheries Science Center, National Oceanic and Atmospheric Administration, Seattle, WA, USA_
+
+__Karl Veggerby__  
+_Ocean Associates, Seattle, WA, USA_
+
+***
+
+This is version `r paste0('0.',format(Sys.time(), '%y.%m.%d'))`.
+
+***
+
+# Background
+
+
+# Requirements
+
+```{r load_pkgs}
+library(here)
+library(MARSS)
+```
+
