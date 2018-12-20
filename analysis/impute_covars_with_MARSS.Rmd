@@ -35,6 +35,8 @@ This is version `r paste0('0.',format(Sys.time(), '%y.%m.%d'))`.
 ```{r load_pkgs, message=FALSE}
 ## for analysis
 library(MARSS)
+## for plotting
+library(viridisLite)
 ## for dir mgmt
 library(here)
 datadir <- here("data")
@@ -65,12 +67,14 @@ cobs[cobs=="team carcass"] <- "car"
 cobs[cobs=="achord_gordy"] <- "tag"
 ## round temps
 cobs[,grep("T_", colnames(cobs))] <- round(cobs[,grep("T_", colnames(cobs))], 2)
-## inspect
-head(cobs)
-tail(cobs)
 ```
 
-The temperature data come from two different sources: 1) the food web group (Sanderson et al.), and 2) the juvenile tagging group (Achord, Axel et al.). We need to split the data out by those groups.
+The temperature data come from two different sources:
+
+  1. the food web group (Sanderson et al.), and  
+  2. the juvenile tagging group (Achord, Axel et al.).  
+  
+We need to split the data out by those groups.
 
 ```{r split_obs_grps}
 ## empty data frames
@@ -92,7 +96,24 @@ colnames(tag) <- paste0(colnames(tag), "_tag")
 ## regroup by sites & source
 cobs_m <- cbind(car, tag)
 cobs_m <- cobs_m[,sort(colnames(cobs_m))]
-head(cobs_m)
-matplot(cobs_m, type="l", lty="solid")
+```
+
+## Plot the data
+
+```{r data_plot}
+par(mai=c(0.9,0.9,0.1,0.1), omi=c(0,0,0,0))
+## plot the data
+matplot(cobs_m, type = "l", lty = "solid",
+        lwd = 2, las = 1,
+        ylab = "Temperature (C)", xaxt="n",
+        col = plasma(ncol(cobs_m), alpha = 0.5, begin = 0, end = 1))
+years <- unique(cobs$year)
+n_yrs <- length(years)
+n_days <- nrow(cobs) / n_yrs
+axis(1,
+     at = seq(n_days / 2, by = n_days, length.out = n_yrs),
+     labels = years,
+     tick = FALSE, line = -1,
+     cex.axis = 0.7)
 ```
 
