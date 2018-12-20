@@ -35,8 +35,8 @@ Specifically, for temperature measured at site $i$ in year $y$ and day $d$, $\ma
 
 \begin{equation} \label{eq4}
   \begin{gathered}
-    \mathbf{x}_{i,y,d} = \mathbf{x}_{i,y,d-1} + \mathbf{w}_{i,y,d} \\
-    \mathbf{T}_{i,y,d} = \mathbf{x}_{i,y,d} + \mathbf{a}_{i,y} + \mathbf{v}_{i,y,d}
+    \mathbf{T}_{i,y,d} = \mathbf{x}_{i,y,d} + \mathbf{a}_{i,y} + \mathbf{v}_{i,y,d} \\
+    \mathbf{x}_{i,y,d} = \mathbf{x}_{i,y,d-1} + \mathbf{w}_{i,y,d}
   \end{gathered}
 \end{equation}
 
