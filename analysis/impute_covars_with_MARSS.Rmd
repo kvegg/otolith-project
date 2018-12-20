@@ -61,7 +61,7 @@ Let's simplify some names in the file and round the observations to the nearest 
 colnames(cobs) <- gsub("data_source", replacement = "s", x = colnames(cobs))
 colnames(cobs) <- gsub("daily_mean", replacement = "T", x = colnames(cobs))
 ## site abbrevs
-sites <- gsub("T_", replacement = "", x = colnames(cobs)[10:16])
+sites <- sort(gsub("T_", replacement = "", x = colnames(cobs)[10:16]))
 ## simplify sources
 cobs[cobs=="team carcass"] <- "car"
 cobs[cobs=="achord_gordy"] <- "tag"
@@ -98,7 +98,9 @@ cobs_m <- cbind(car, tag)
 cobs_m <- cobs_m[,sort(colnames(cobs_m))]
 ```
 
-## Plot the data
+# Plot the data
+
+## All sites together
 
 ```{r data_plot}
 par(mai=c(0.9,0.9,0.1,0.1), omi=c(0,0,0,0))
@@ -110,10 +112,32 @@ matplot(cobs_m, type = "l", lty = "solid",
 years <- unique(cobs$year)
 n_yrs <- length(years)
 n_days <- nrow(cobs) / n_yrs
-axis(1,
+axis(side = 1,
      at = seq(n_days / 2, by = n_days, length.out = n_yrs),
      labels = years,
      tick = FALSE, line = -1,
      cex.axis = 0.7)
 ```
+
+## By site
+
+```{r plot_by_site, fig.height=10, fig.width=7}
+par(mfrow = c(length(sites), 1),
+    mai = c(0.3,0.5,0.2,0.1),
+    omi = c(0,0,0,0))
+for(i in sites) {
+  ## site-specific data
+  tmp <- cobs_m[, grep(i, colnames(cobs_m)), drop = FALSE]
+  ## plot the data
+  matplot(tmp, type = "l", lty = "solid",
+          lwd = 2, las = 1,
+          ylab = "Temperature (C)", xaxt="n", main = i,
+          col = plasma(ncol(tmp), alpha = 1, begin = 0.1, end = 0.3))
+  axis(side = 1,
+       at = seq(n_days / 2, by = n_days, length.out = n_yrs),
+       labels = years,
+       tick = FALSE, line = -1)
+}
+```
+
 
