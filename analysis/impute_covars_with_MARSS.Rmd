@@ -29,6 +29,16 @@ This is version `r paste0('0.',format(Sys.time(), '%y.%m.%d'))`.
 
 # Background
 
+We would like to examine temperature as a possible covariate in the analyses of the growth data. However, the temperature are not complete for all sites and times, and therefore we have to impute some of the values. To do so, we will use the __MARSS__ package, which is designed to fit autoregressive models to multivariate time series data.
+
+Specifically, for temperature measured at site $i$ in year $y$ and day $d$, $\mathbf{T}_{i,y,d}$, we can write
+
+\begin{equation} \label{eq4}
+  \begin{gathered}
+    \mathbf{x}_{i,y,d} = \mathbf{x}_{i,y,d-1} + \mathbf{w}_{i,y,d} \\
+    \mathbf{T}_{i,y,d} = \mathbf{x}_{i,y,d} + \mathbf{a}_{i,y} + \mathbf{v}_{i,y,d}
+  \end{gathered}
+\end{equation}
 
 # Requirements
 
