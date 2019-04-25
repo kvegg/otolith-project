@@ -2,6 +2,7 @@
 title: "Imputation of missing covariates"
 output:
   html_document:
+    keep_md: yes
     theme: cerulean
     toc: true
     toc_float: true
