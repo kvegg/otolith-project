@@ -54,6 +54,7 @@ library(viridisLite)
 ## for dir mgmt
 library(here)
 datadir <- here("data")
+analdir <- here("analysis")
 ```
 
 # Data munging
@@ -161,7 +162,7 @@ for(i in sites) {
 
 # Imputation
 
-Based on the plots above, we will use the following forms for the vectors and matrices in Eqn \ref{eq1} that relate the states to themselves and the observations to the states. Specifically, it looks as though the seasonal patterns dominate in each stream, with very little evidence for an increasing or decreasing trend. Furthermore, other than subtle changes in the overall level (mean), the streams appear to move up and down in synchrony. Thus, we will set
+Based on the plots above, we will use the following forms for the vectors and matrices in Eqn (\ref{eq1}) that relate the states to themselves and the observations to the states. Specifically, it looks as though the seasonal patterns dominate in each stream, with very little evidence for an increasing or decreasing trend. Furthermore, other than subtle changes in the overall level (mean), the streams appear to move up and down in synchrony. Thus, we will set
 
 * $\mathbf{Z}$ equal to an $n \times 1$ column vector of 1's ($[1~1\dots1]^{\top}$), such that all of the data are assumed to be observations of a single overall temperature regime;
 
@@ -209,4 +210,66 @@ $$
 
 # MARSS modeling
 
-Now we can translate our model from 
+Now we can translate our model from Eqn (\ref{eq1}) into a form suitable for `MARSS()`.
+
+## Observation equation
+
+We begin with the observation equation.
+
+```{r marss_obs}
+## number of data sets
+nn <- dim(cobs_m)[2]
+## number of streams
+mm <- length(sites)
+## empty list for model defn
+mod_list <- list()
+## Z
+# ZZ <- matrix(1, nrow = nn, ncol = 1)
+ZZ <- matrix(0, nrow = nn, ncol = mm)
+for(i in seq(mm)) {
+  ZZ[which(gsub("_.*", "", colnames(cobs_m)) %in% sites[i]),i] <- 1
+}
+mod_list$Z <- ZZ
+## a
+aa <- matrix(list(0), nrow = nn, ncol = 1)
+# aa[,] <- colnames(cobs_m)
+# aa[grep("tag", colnames(cobs_m)),] <- 0
+mod_list$A <- aa
+## R
+RR <- matrix(list(0), nrow = nn, ncol = nn)
+diag(RR) <- rep("r", nn)
+mod_list$R <- RR
+```
+
+## Process equation
+
+And now the process (state) equation.
+
+```{r marss_proc}
+## B
+BB <- matrix(list(0), nrow = mm, ncol = mm)
+diag(BB) <- sites
+mod_list$B <- BB
+## u
+mod_list$U <- matrix(0, nrow = mm, ncol = 1)
+## C
+# mod_list$C <- matrix(sites, nrow = mm, ncol = 1)
+## c (discrete sine wave)
+# mod_list$c <- matrix(sin(2 * pi * seq(nrow(cobs_m)) / n_days), nrow = 1)
+## Q
+QQ <- matrix(list("p"), nrow = mm, ncol = mm)
+diag(QQ) <- rep("q", mm)
+mod_list$Q <- QQ
+```
+
+## Fit the model
+
+```{r fit_model}
+## fit base model (if not already saved)
+if(!file.exists(file.path(analdir, "temp_imputed.rds"))) {
+  tmp <- MARSS(y = t(cobs_m), model = mod_list, control = list(maxit = 2000))
+  ## save results to file
+  saveRDS(tmp, file.path(analdir, "temp_imputed.rds"))
+}
+```
+
