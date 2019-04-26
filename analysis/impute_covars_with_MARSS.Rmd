@@ -30,16 +30,21 @@ This is version `r paste0('0.',format(Sys.time(), '%y.%m.%d'))`.
 
 # Background
 
-We would like to examine temperature as a possible covariate in the analyses of the growth data. However, the temperature are not complete for all sites and times, and therefore we have to impute some of the values. To do so, we will use the __MARSS__ package, which is designed to fit autoregressive models to multivariate time series data.
+We would like to examine temperature as a possible covariate in the analyses of the growth data. However, the temperature are not complete for all sites and times, and therefore we have to impute some of the values based upon measurements from two different sources: Team Carcass and Team Tagging. To do so, we will use the __MARSS__ package, which is designed to fit autoregressive models to multivariate time series data.
 
-Specifically, for temperature measured at site $i$ in year $y$ and day $d$, $\mathbf{T}_{i,y,d}$, we can write
+Specifically, we have data from $n$ = 7 streams and 1-2 sources for each stream. For temperature measured at site $i$ from source $j$ on day $d$ ($T_{i,j,d}$), we can write
 
-\begin{equation} \label{eq4}
+\begin{equation} \label{eq1}
   \begin{gathered}
-    \mathbf{T}_{i,y,d} = \mathbf{x}_{i,y,d} + \mathbf{a}_{i,y} + \mathbf{v}_{i,y,d} \\
-    \mathbf{x}_{i,y,d} = \mathbf{x}_{i,y,d-1} + \mathbf{w}_{i,y,d}
+    \mathbf{T}_{d} = \mathbf{Z} \mathbf{x}_{d} + \mathbf{a} + \mathbf{v}_{d} \\
+    \mathbf{x}_{d} = \mathbf{B} \mathbf{x}_{d-1} + \mathbf{C} \mathbf{c}_{d-h} + \mathbf{w}_{d},
   \end{gathered}
 \end{equation}
+
+where $\mathbf{T}_{d}$ is an $n \times 1$ vector of the $T_{i,j,d}$ and $\mathbf{x}_{d}$ is an $m \times 1$ vector of the true, but unobserved temperature in each stream on day $d$. Here, $m < n$ because we have 2 sources of data from some streams. The vectors of observation ($\mathbf{v}_{d}$) and process ($\mathbf{w}_{d}$) errors are both distributed as multivariate normal with means $\mathbf{0}$ and covariance matrices $\mathbf{R}$ and $\mathbf{Q}$, respectively.
+
+The specific forms for $\mathbf{Z}$ , $\mathbf{a}$ and $\mathbf{B}$ will be chosen initially based on visually identified shared/different characteristics among the different sites. The values in the matrix $\mathbf{C}$ determine the effect(s) of any potential, and possibly lagged, covariates contained in $\mathbf{c}_{d-h}$. Those will also be chosen after inspection of the data from the different sources
+
 
 # Requirements
 
@@ -107,6 +112,9 @@ colnames(tag) <- paste0(colnames(tag), "_tag")
 ## regroup by sites & source
 cobs_m <- cbind(car, tag)
 cobs_m <- cobs_m[,sort(colnames(cobs_m))]
+## remove tailing rows with all NA
+all_na <- apply(apply(cobs_m, 1, is.na), 2, all)
+cobs_m <- cobs_m[!all_na,]
 ```
 
 # Plot the data
@@ -150,5 +158,16 @@ for(i in sites) {
        tick = FALSE, line = -1)
 }
 ```
+
+# Imputation
+
+Based on the plots above, we will use the following MARSS model to estimate the true, but unobserved temperature in each stream:
+
+\begin{equation} \label{eq2}
+  \begin{gathered}
+    \mathbf{T}_{i,y,d} = \mathbf{x}_{i,y,d} + \mathbf{a}_{i,y} + \mathbf{v}_{i,y,d} \\
+    \mathbf{x}_{i,y,d} = \mathbf{x}_{i,y,d-1} + \mathbf{w}_{i,y,d}
+  \end{gathered}
+\end{equation}
 
 
