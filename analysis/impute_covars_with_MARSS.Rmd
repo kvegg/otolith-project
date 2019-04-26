@@ -121,7 +121,7 @@ cobs_m <- cobs_m[!all_na,]
 
 ## All sites together
 
-```{r data_plot}
+```{r data_plot, fig.align="center"}
 par(mai=c(0.9,0.9,0.1,0.1), omi=c(0,0,0,0))
 ## plot the data
 matplot(cobs_m, type = "l", lty = "solid",
@@ -140,7 +140,7 @@ axis(side = 1,
 
 ## By site
 
-```{r plot_by_site, fig.height=10, fig.width=7}
+```{r plot_by_site, fig.height=10, fig.width=7, fig.align="center"}
 par(mfrow = c(length(sites), 1),
     mai = c(0.3,0.5,0.2,0.1),
     omi = c(0,0,0,0))
@@ -161,13 +161,50 @@ for(i in sites) {
 
 # Imputation
 
-Based on the plots above, we will use the following MARSS model to estimate the true, but unobserved temperature in each stream:
+Based on the plots above, we will use the following forms for the vectors and matrices in Eqn \ref{eq1} that relate the states to themselves and the observations to the states. Specifically, it looks as though the seasonal patterns dominate in each stream, with very little evidence for an increasing or decreasing trend. Furthermore, other than subtle changes in the overall level (mean), the streams appear to move up and down in synchrony. Thus, we will set
 
-\begin{equation} \label{eq2}
-  \begin{gathered}
-    \mathbf{T}_{i,y,d} = \mathbf{x}_{i,y,d} + \mathbf{a}_{i,y} + \mathbf{v}_{i,y,d} \\
-    \mathbf{x}_{i,y,d} = \mathbf{x}_{i,y,d-1} + \mathbf{w}_{i,y,d}
-  \end{gathered}
-\end{equation}
+* $\mathbf{Z}$ equal to an $n \times 1$ column vector of 1's ($[1~1\dots1]^{\top}$), such that all of the data are assumed to be observations of a single overall temperature regime;
+
+* $\mathbf{a}$ equal to an $n \times 1$ column vector where the elements are shared for data from the same stream (_e.g._, both sets of data for Elk would get the same level, but Elk is different from Valley);
+
+* $\mathbf{v}_d \sim \text{MVN}(\mathbf{0}, \mathbf{R})$ with $\mathbf{R}$ equal to an $n \times n$ matrix with the same variance ($r$) in each element of the diagonal and 0's elsewhere,
+
+$$
+\mathbf{R} = 
+  \begin{bmatrix}
+  r & 0 & \dots & 0 \\
+  0 & r & \dots & 0 \\
+  \vdots & \vdots & \ddots & \vdots \\
+  0 & 0 & \dots & r \\
+  \end{bmatrix};
+$$
+
+* $\mathbf{B}$ equal to an $m \times m$ matrix with different parameters down the diagonal and 0's elsewhere, which will allow the true temperature in each stream to follow a first-order autoregressive process,
+
+$$
+\mathbf{B} = 
+  \begin{bmatrix}
+  b_1 & 0 & \dots & 0 \\
+  0 & b_2 & \dots & 0 \\
+  \vdots & \vdots & \ddots & \vdots \\
+  0 & 0 & \dots & b_m \\
+  \end{bmatrix};
+$$
+
+* $\mathbf{C}$ equal to an $m \times 1$ vector with unique parameters to allow for varying effects of the seasonal signal on each stream ($[C_1 ~ C_2 \dots C_m]^{\top}$);
+
+* $\mathbf{c}$ equal to a discrete sine wave with a period of 365 days, such that $\mathbf{c}_t$ is a scalar; and
+
+* $\mathbf{w}_d \sim \text{MVN}(\mathbf{0}, \mathbf{Q})$ with $\mathbf{Q}$ equal to an $m \times m$ matrix with the same variance ($q$) in each element of the diagonal and the same covariance ($p$) elsewhere,
+
+$$
+\mathbf{Q} = 
+  \begin{bmatrix}
+  q & p & \dots & p \\
+  p & q & \dots & p \\
+  \vdots & \vdots & \ddots & \vdots \\
+  p & p & \dots & q \\
+  \end{bmatrix}.
+$$
 
 
