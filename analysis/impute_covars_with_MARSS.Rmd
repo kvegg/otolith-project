@@ -1,20 +1,17 @@
 ---
-title: "Imputation of missing covariates"
+title: "Imputation of missing covariates for use in modeling growth rates of juvenile Chinook salmon"
 output:
-  html_document:
-    keep_md: yes
-    theme: cerulean
-    toc: true
-    toc_float: true
-    toc_depth: 3
-    fig_caption: yes
+  pdf_document:
+    highlight: haddock
+fontsize: 11pt
+geometry: margin=1in
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-<br/>
+\vspace{0.25in}
 
 [__Mark Scheuerell__](https://faculty.washington.edu/scheuerl/)  
 _Fish Ecology Division, Northwest Fisheries Science Center, National Marine Fisheries Service, National Oceanic and Atmospheric Administration, Seattle, WA, USA_
@@ -22,11 +19,11 @@ _Fish Ecology Division, Northwest Fisheries Science Center, National Marine Fish
 __Karl Veggerby__  
 _Ocean Associates, Seattle, WA, USA_
 
-***
+
+\vspace{0.15in}
 
 This is version `r paste0('0.',format(Sys.time(), '%y.%m.%d'))`.
 
-***
 
 # Background
 
@@ -34,7 +31,8 @@ We would like to examine temperature as a possible covariate in the analyses of 
 
 Specifically, we have data from $n$ = 7 streams and 1-2 sources for each stream. For temperature measured at site $i$ from source $j$ on day $d$ ($T_{i,j,d}$), we can write
 
-\begin{equation} \label{eq1}
+\begin{equation}
+  \label{eq1}
   \begin{gathered}
     \mathbf{T}_{d} = \mathbf{Z} \mathbf{x}_{d} + \mathbf{a} + \mathbf{v}_{d} \\
     \mathbf{x}_{d} = \mathbf{B} \mathbf{x}_{d-1} + \mathbf{C} \mathbf{c}_{d-h} + \mathbf{w}_{d},
@@ -121,7 +119,7 @@ cobs_m <- cobs_m[!all_na,]
 
 ## All sites together
 
-```{r data_plot, fig.align="center"}
+```{r data_plot, fig.align="center", echo = FALSE}
 par(mai=c(0.9,0.9,0.1,0.1), omi=c(0,0,0,0))
 ## plot the data
 matplot(cobs_m, type = "l", lty = "solid",
@@ -138,11 +136,13 @@ axis(side = 1,
      cex.axis = 0.7)
 ```
 
+\pagebreak
+
 ## By site
 
-```{r plot_by_site, fig.height=10, fig.width=7, fig.align="center"}
+```{r plot_by_site, fig.height=9, fig.width=7, fig.align="center", echo = FALSE}
 par(mfrow = c(length(sites), 1),
-    mai = c(0.3,0.5,0.2,0.1),
+    mai = c(0.3,0.4,0.2,0.1),
     omi = c(0,0,0,0))
 for(i in sites) {
   ## site-specific data
@@ -207,4 +207,6 @@ $$
   \end{bmatrix}.
 $$
 
+# MARSS modeling
 
+Now we can translate our model from 
