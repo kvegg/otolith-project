@@ -11,16 +11,17 @@ geometry: margin=1in
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-\vspace{0.25in}
+\vspace{0.2in}
 
 [__Mark Scheuerell__](https://faculty.washington.edu/scheuerl/)  
-_Fish Ecology Division, Northwest Fisheries Science Center, National Marine Fisheries Service, National Oceanic and Atmospheric Administration, Seattle, WA, USA_
+_Fish Ecology Division, Northwest Fisheries Science Center, Seattle, WA, USA_
+
+\vspace{0.1in}
 
 __Karl Veggerby__  
 _Ocean Associates, Seattle, WA, USA_
 
-
-\vspace{0.15in}
+\vspace{0.2in}
 
 This is version `r paste0('0.',format(Sys.time(), '%y.%m.%d'))`.
 
@@ -262,14 +263,20 @@ diag(QQ) <- rep("q", mm)
 mod_list$Q <- QQ
 ```
 
-## Fit the model
+## Fit a base model with no seasonal forcing
 
-```{r fit_model}
+```{r fit_base_model}
 ## fit base model (if not already saved)
-if(!file.exists(file.path(analdir, "temp_imputed.rds"))) {
-  tmp <- MARSS(y = t(cobs_m), model = mod_list, control = list(maxit = 2000))
+if(!file.exists(file.path(analdir, "base_temp_model.rds"))) {
+  fit_base <- MARSS(y = t(cobs_m), model = mod_list, control = list(maxit = 2000))
   ## save results to file
-  saveRDS(tmp, file.path(analdir, "temp_imputed.rds"))
+  saveRDS(fit_base, file.path(analdir, "base_temp_model.rds"))
 }
+```
+
+Let's examine the model fits.
+
+```{r examine_base_model}
+
 ```
 
