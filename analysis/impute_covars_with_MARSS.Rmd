@@ -195,7 +195,7 @@ $$
 
 * $\mathbf{C}$ equal to an $m \times 1$ vector with unique parameters to allow for varying effects of the seasonal signal on each stream ($[C_1 ~ C_2 \dots C_m]^{\top}$);
 
-* $\mathbf{c}$ equal to a discrete sine wave with a period of 365 days, such that $\mathbf{c}_t$ is a scalar; and
+* $\mathbf{c}$ equal to a discrete cosine wave with a period of ~`r round(nrow(cobs) / (n_yrs - 0.5), 0)` days, such that $\mathbf{c}_t$ is a scalar; and
 
 * $\mathbf{w}_d \sim \text{MVN}(\mathbf{0}, \mathbf{Q})$ with $\mathbf{Q}$ equal to an $m \times m$ matrix with the same variance ($q$) in each element of the diagonal and the same covariance ($p$) elsewhere,
 
@@ -253,10 +253,6 @@ diag(BB) <- sites
 mod_list$B <- BB
 ## u
 mod_list$U <- matrix(0, nrow = mm, ncol = 1)
-## C
-# mod_list$C <- matrix(sites, nrow = mm, ncol = 1)
-## c (discrete sine wave)
-# mod_list$c <- matrix(sin(2 * pi * seq(nrow(cobs_m)) / n_days), nrow = 1)
 ## Q
 QQ <- matrix(list("p"), nrow = mm, ncol = mm)
 diag(QQ) <- rep("q", mm)
@@ -302,4 +298,31 @@ readRDS(file.path(analdir, "rw_temp_model.rds"))
 ```
 
 Interestingly, this model does not fit as well (based on an $\Delta$AIC value of ~90 units).
+
+## Base model with seasonal signal
+
+Now let's add a seasonal effect in the form of a discrete cosine wave. By adjusting the period correctly, we can make it reflect the observed seasonal pattern.
+
+```{r cosine_wave, fig.height=4, fig.width=7, fig.align="center", echo = FALSE}
+## proper "yearly" interval (days)
+intvl <- nrow(cobs) / (n_yrs - 0.5)
+## discrete cosine wave
+cc <- -cos(2 * pi * seq(nrow(cobs)) / intvl)
+par(mai=c(0.9,0.9,0.1,0.1), omi=c(0,0,0,0))
+plot.ts(cc, ylab = "Cosine", xaxt="n")
+axis(side = 1,
+     at = seq(n_days / 2, by = intvl, length.out = n_yrs),
+     labels = years,
+     tick = FALSE, line = -1,
+     cex.axis = 0.7)
+```
+
+\vspace{0.25in}
+
+```{r}
+## C
+mod_list$C <- matrix(sites, nrow = mm, ncol = 1)
+## c (discrete sine wave)
+mod_list$c <- matrix(cc, nrow = 1)
+```
 
