@@ -277,6 +277,29 @@ if(!file.exists(file.path(analdir, "base_temp_model.rds"))) {
 Let's examine the model fits.
 
 ```{r examine_base_model}
-
+readRDS(file.path(analdir, "base_temp_model.rds"))
 ```
+
+## Fit random-walk models
+
+The estimates of the diagonal values of the matrix $\mathbf{B}$ from the above model, which control the degree of autocorrelation from one time step to another, are very close to 1. This suggests we should try a subtely different model where we fix $\mathbf{B}$ equal to the identity matrix $\mathbf{I}$.
+
+```{r fit_base_rw}
+## change B in model defn
+mod_list$B <- diag(mm)
+## fit model
+if(!file.exists(file.path(analdir, "rw_temp_model.rds"))) {
+  fit_base <- MARSS(y = t(cobs_m), model = mod_list, control = list(maxit = 2000))
+  ## save results to file
+  saveRDS(fit_base, file.path(analdir, "rw_temp_model.rds"))
+}
+```
+
+Let's examine the model fits.
+
+```{r examine_rw_model}
+readRDS(file.path(analdir, "rw_temp_model.rds"))
+```
+
+Interestingly, this model does not fit as well (based on an $\Delta$AIC value of ~90 units).
 
