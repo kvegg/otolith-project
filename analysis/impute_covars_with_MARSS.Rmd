@@ -233,8 +233,7 @@ for(i in seq(mm)) {
 mod_list$Z <- ZZ
 ## a
 aa <- matrix(list(0), nrow = nn, ncol = 1)
-# aa[,] <- colnames(cobs_m)
-# aa[grep("tag", colnames(cobs_m)),] <- 0
+aa[,] <- gsub("_.*", "", colnames(cobs_m))
 mod_list$A <- aa
 ## R
 RR <- matrix(list(0), nrow = nn, ncol = nn)
@@ -305,11 +304,11 @@ Now let's add a seasonal effect in the form of a discrete cosine wave. By adjust
 
 ```{r cosine_wave, fig.height=4, fig.width=7, fig.align="center", echo = FALSE}
 ## proper "yearly" interval (days)
-intvl <- nrow(cobs) / (n_yrs - 0.5)
+intvl <- nrow(cobs_m) / (n_yrs - 0.5)
 ## discrete cosine wave
-cc <- -cos(2 * pi * seq(nrow(cobs)) / intvl)
+cc <- -cos(2 * pi * seq(nrow(cobs_m)) / intvl)
 par(mai=c(0.9,0.9,0.1,0.1), omi=c(0,0,0,0))
-plot.ts(cc, ylab = "Cosine", xaxt="n")
+plot.ts(cc, ylab = "Cosine", xaxt="n", las = 1)
 axis(side = 1,
      at = seq(n_days / 2, by = intvl, length.out = n_yrs),
      labels = years,
@@ -319,10 +318,24 @@ axis(side = 1,
 
 \vspace{0.25in}
 
-```{r}
+```{r fit_seasonal_model}
 ## C
 mod_list$C <- matrix(sites, nrow = mm, ncol = 1)
 ## c (discrete sine wave)
 mod_list$c <- matrix(cc, nrow = 1)
+## change B back to diagonal and unequal
+mod_list$B <- BB
+## fit model
+if(!file.exists(file.path(analdir, "seas_temp_model.rds"))) {
+  fit_seas <- MARSS(y = t(cobs_m), model = mod_list, control = list(maxit = 2000))
+  ## save results to file
+  saveRDS(fit_seas, file.path(analdir, "seas_temp_model.rds"))
+}
+```
+
+Let's examine the model fits.
+
+```{r examine_seas_model}
+readRDS(file.path(analdir, "seas_temp_model.rds"))
 ```
 
