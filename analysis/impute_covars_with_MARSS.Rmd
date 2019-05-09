@@ -272,7 +272,7 @@ if(!file.exists(file.path(analdir, "base_temp_model.rds"))) {
 Let's examine the model fits.
 
 ```{r examine_base_model}
-readRDS(file.path(analdir, "base_temp_model.rds"))
+fit_base <- readRDS(file.path(analdir, "base_temp_model.rds"))
 ```
 
 ## Fit random-walk models
@@ -284,16 +284,16 @@ The estimates of the diagonal values of the matrix $\mathbf{B}$ from the above m
 mod_list$B <- diag(mm)
 ## fit model
 if(!file.exists(file.path(analdir, "rw_temp_model.rds"))) {
-  fit_base <- MARSS(y = t(cobs_m), model = mod_list, control = list(maxit = 2000))
+  fit_rw <- MARSS(y = t(cobs_m), model = mod_list, control = list(maxit = 2000))
   ## save results to file
-  saveRDS(fit_base, file.path(analdir, "rw_temp_model.rds"))
+  saveRDS(fit_rw, file.path(analdir, "rw_temp_model.rds"))
 }
 ```
 
 Let's examine the model fits.
 
 ```{r examine_rw_model}
-readRDS(file.path(analdir, "rw_temp_model.rds"))
+fit_rw <- readRDS(file.path(analdir, "rw_temp_model.rds"))
 ```
 
 Interestingly, this model does not fit as well (based on an $\Delta$AIC value of ~90 units).
@@ -336,6 +336,152 @@ if(!file.exists(file.path(analdir, "seas_temp_model.rds"))) {
 Let's examine the model fits.
 
 ```{r examine_seas_model}
-readRDS(file.path(analdir, "seas_temp_model.rds"))
+fit_seas <- readRDS(file.path(analdir, "seas_temp_model.rds"))
 ```
+
+## De-mean the observations
+
+The lack of convergence and low values for $\mathbf{a}$ (_i.e._, `A.???` in the `MARSS()` output) suggests we should instead de-mean the observations, fits the model, and then add the mean back to the estimates. We'll also exclude the cosine wave for now.
+
+```{r demean_base}
+## de-mean obs
+dm_obs <- scale(cobs_m, center = TRUE, scale = FALSE)
+## set a = 0
+mod_list$A <- matrix(0, nrow = nn, ncol = 1)
+## fit model
+if(!file.exists(file.path(analdir, "dbase_temp_model.rds"))) {
+  fit_dbase <- MARSS(y = t(dm_obs), model = mod_list, control = list(maxit = 2000))
+  ## save results to file
+  saveRDS(fit_dbase, file.path(analdir, "dbase_temp_model.rds"))
+}
+```
+
+That didn't work as well as hoped.
+
+## Scale the observations
+
+Now we'll try to fully scale the observations, such that times series for each location has zero mean and unit variance. In addition, we will assume all of the locations are observations of a single, regional temperature patter, but scaled accordingly at the localed level (_i.e._, different min, max, mean).
+
+To make this work within a location, we need to combine the multiple time series into one.
+
+```{r scaled_base}
+## means by location
+scld <- matrix(NA, ncol = length(sites), nrow = dim(cobs_m)[1])
+colnames(scld) <- sites
+## average fitted values by site
+for(i in sites) {
+  ## site-specific data
+  tmp <- cobs_m[, grep(i, colnames(cobs_m)), drop = FALSE]
+  if(dim(tmp)[2] != 1) {
+    scld[,i] <- apply(tmp, 1, mean, na.rm = TRUE)
+  } else
+    scld[,i] <- tmp
+}
+
+## de-mean obs
+sc_obs <- scale(scld)
+## all locations are obs of single state
+mod_list$Z <- matrix(1, nrow = length(sites), ncol = 1)
+mod_list$A <- matrix(0, nrow = length(sites), ncol = 1)
+RR <- matrix(list(0), nrow = length(sites), ncol = length(sites))
+diag(RR) <- rep("r", length(sites))
+mod_list$R <- RR
+## set scalars for state eqn
+mod_list$B <- matrix("b")
+mod_list$U <- matrix(0)
+mod_list$Q <- matrix("q")
+mod_list$C <- matrix("C")
+## fit model
+if(!file.exists(file.path(analdir, "sbase_temp_model.rds"))) {
+  fit_sbase <- MARSS(y = t(sc_obs), model = mod_list, control = list(maxit = 2000))
+  ## save results to file
+  saveRDS(fit_sbase, file.path(analdir, "sbase_temp_model.rds"))
+}
+```
+
+```{r examine_sbase_model}
+fit_sbase <- readRDS(file.path(analdir, "sbase_temp_model.rds"))
+```
+
+```{r dbase_plot, fig.align="center", echo = FALSE}
+par(mai=c(0.9,0.9,0.1,0.1), omi=c(0,0,0,0))
+## plot the data
+matplot(sc_obs, type = "l", lty = "solid",
+        lwd = 2, las = 1,
+        ylab = "Scaled temperature (C)", xaxt="n",
+        col = plasma(ncol(sc_obs), alpha = 0.5, begin = 0, end = 1))
+lines(seq(nrow(scld)), fit_sbase$states, lwd = 2, col = "gray")
+axis(side = 1,
+     at = seq(n_days / 2, by = n_days, length.out = n_yrs),
+     labels = years,
+     tick = FALSE, line = -1,
+     cex.axis = 0.7)
+```
+
+## Estimated temperature by site
+
+```{r est_by_site, fig.height=9, fig.width=7, fig.align="center"}
+y_hat_Z <- t(fit_sbase$ytT)
+colnames(y_hat_Z) <- sites
+
+## plot fitted values
+par(mfrow = c(length(sites), 1),
+    mai = c(0.3,0.4,0.2,0.1),
+    omi = c(0,0,0,0))
+for(i in sites) {
+  ## plot the data
+  plot.ts(y_hat_Z[,i], type = "l", lty = "solid",
+          lwd = 2, las = 1,
+          ylab = "Scaled temperature (C)", xaxt="n", main = i,
+          col = plasma(ncol(tmp), alpha = 0.5, begin = 0.1, end = 0.3))
+  axis(side = 1,
+       at = seq(n_days / 2, by = n_days, length.out = n_yrs),
+       labels = years,
+       tick = FALSE, line = -1)
+}
+```
+
+
+# Reconstruction
+
+The last step is to transform these z-scored values back into normal space.
+
+```{r recon_back, fig.height=9, fig.width=7, fig.align="center"}
+## mean and var of orig series
+men <- apply(scld, 2, mean, na.rm = TRUE)
+std <- apply(scld, 2, sd, na.rm = TRUE)
+
+y_hat <- y_hat_Z
+for(i in 1:length(sites)) {
+  y_hat[,i] <- y_hat_Z[,i] * std[i] + men[i]
+}
+
+## plot fitted values
+par(mfrow = c(length(sites), 1),
+    mai = c(0.3,0.4,0.2,0.1),
+    omi = c(0,0,0,0))
+for(i in sites) {
+  ## plot the data
+  plot.ts(y_hat[,i], type = "l", lty = "solid",
+          lwd = 2, las = 1,
+          ylab = "Temperature (C)", xaxt="n", main = i,
+          col = plasma(ncol(tmp), alpha = 0.5, begin = 0.1, end = 0.3))
+  axis(side = 1,
+       at = seq(n_days / 2, by = n_days, length.out = n_yrs),
+       labels = years,
+       tick = FALSE, line = -1)
+}
+```
+
+These values look reasonable (but see Valley Cr in 2007), so we'll save the fitted values
+
+```{r save_recon}
+saveRDS(y_hat, file.path(analdir, "reconstructed_temps.rds"))
+```
+
+
+
+
+
+
 
