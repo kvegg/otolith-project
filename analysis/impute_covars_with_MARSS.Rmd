@@ -64,7 +64,7 @@ We begin by loading the data file with the temperature summaries by time (rows) 
 
 ```{r load_covars}
 ## load obs covariates
-cobs <- read.csv(file.path(datadir, "daily_mean_temp.csv"),
+cobs <- read.csv(file.path(datadir, "daily_mean_temp_2.csv"),
                  stringsAsFactors = FALSE)
 ## inspect data
 head(cobs)
