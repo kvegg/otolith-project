@@ -485,11 +485,12 @@ for(i in sites) {
 }
 ```
 
-These values look reasonable, so we'll save the fitted values as an __R__ object and a csv.
+These values look reasonable, so we'll round them and save them as an __R__ object and a csv.
 
 ```{r save_recon}
-saveRDS(y_hat, file.path(analdir, "reconstructed_temps.rds"))
-write.csv(y_hat, file.path(datadir, "reconstructed_temps.csv"))
+y_hat_rnd <- round(y_hat, 2)
+saveRDS(y_hat_rnd, file.path(analdir, "reconstructed_temps.rds"))
+write.csv(y_hat_rnd, file = file.path(datadir, "reconstructed_temps.csv"), row.names = FALSE)
 ```
 
 
